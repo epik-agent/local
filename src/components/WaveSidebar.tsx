@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { IssueStatus, WaveIssue } from "../lib/build";
+import type { BuildSession, IssueStatus, WaveIssue } from "../lib/build";
 import { useProjectScope } from "../hooks/useProjectScope";
 import { useWaveData } from "../hooks/useWaveData";
 
@@ -137,8 +137,79 @@ function IssueRow({ issue, org, repo }: IssueRowProps): React.ReactElement {
 }
 
 // ---------------------------------------------------------------------------
+// Active build selector
+// ---------------------------------------------------------------------------
+
+interface ActiveBuildSelectorProps {
+  sessions: BuildSession[];
+  activeSessionId: string | null;
+  onSelect: (sessionId: string) => void;
+}
+
+/**
+ * Horizontal tab bar displayed at the top of the sidebar content area when
+ * multiple concurrent build sessions are active.
+ *
+ * Each tab shows the repo name of the session and a running indicator dot for
+ * sessions that are still in progress.
+ */
+function ActiveBuildSelector({
+  sessions,
+  activeSessionId,
+  onSelect,
+}: ActiveBuildSelectorProps): React.ReactElement {
+  return (
+    <div
+      data-testid="active-build-selector"
+      className="flex items-center gap-1 overflow-x-auto border-b px-1 py-1"
+      style={{ borderColor: "var(--border)" }}
+    >
+      {sessions.map((session) => {
+        const isSelected = session.id === activeSessionId;
+        const isRunning = session.status === "running";
+        return (
+          <button
+            key={session.id}
+            data-testid={`build-selector-tab-${session.id}`}
+            data-selected={String(isSelected)}
+            onClick={(): void => {
+              onSelect(session.id);
+            }}
+            className="flex shrink-0 items-center gap-1 rounded px-2 py-0.5 text-xs transition-colors"
+            style={{
+              color: isSelected ? "var(--text)" : "var(--text-muted)",
+              backgroundColor: isSelected ? "var(--bg-active)" : "transparent",
+              borderBottom: isSelected ? "2px solid var(--accent)" : "2px solid transparent",
+            }}
+            aria-pressed={isSelected}
+          >
+            {isRunning && (
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: "var(--accent)" }}
+                aria-label="running"
+              />
+            )}
+            <span className="max-w-[80px] truncate">{session.repo}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // WaveSidebar
 // ---------------------------------------------------------------------------
+
+interface WaveSidebarProps {
+  /** Concurrent build sessions to show in the build selector at the top of the sidebar. */
+  sessions?: BuildSession[];
+  /** The currently selected build session ID. */
+  activeSessionId?: string | null;
+  /** Called when the user selects a build session from the selector. */
+  onSelectSession?: (sessionId: string) => void;
+}
 
 /**
  * Right-panel sidebar showing build progress grouped by wave.
@@ -146,8 +217,16 @@ function IssueRow({ issue, org, repo }: IssueRowProps): React.ReactElement {
  * Renders issues from ``useWaveData`` as a vertical stack, grouped by wave
  * number.  Each issue shows its number, title (clickable link), status chip,
  * and optional PR/CI links.  The panel is collapsible via a toggle button.
+ *
+ * When multiple concurrent build sessions are active (``sessions`` prop is
+ * non-empty), an ``ActiveBuildSelector`` tab bar is shown at the top of the
+ * content area so the user can switch between builds.
  */
-export function WaveSidebar(): React.ReactElement {
+export function WaveSidebar({
+  sessions = [],
+  activeSessionId = null,
+  onSelectSession,
+}: WaveSidebarProps): React.ReactElement {
   const { waves } = useWaveData();
   const { org, repo } = useProjectScope();
   const [isOpen, setIsOpen] = useState(true);
@@ -158,6 +237,7 @@ export function WaveSidebar(): React.ReactElement {
       : "https://github.com";
 
   const isEmpty = waves.length === 0;
+  const hasMultipleSessions = sessions.length > 1;
 
   return (
     <aside
@@ -204,6 +284,15 @@ export function WaveSidebar(): React.ReactElement {
       {/* Content */}
       {isOpen && (
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+          {/* Active build selector — shown when more than one session is running */}
+          {hasMultipleSessions && onSelectSession !== undefined && (
+            <ActiveBuildSelector
+              sessions={sessions}
+              activeSessionId={activeSessionId}
+              onSelect={onSelectSession}
+            />
+          )}
+
           {/* View board link */}
           <a
             data-testid="view-board-link"

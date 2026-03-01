@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { WaveSidebar } from "./WaveSidebar";
-import type { Wave } from "../lib/build";
+import type { BuildSession, Wave } from "../lib/build";
 
 // Mock useWaveData
 vi.mock("../hooks/useWaveData", () => ({
@@ -174,5 +174,64 @@ describe("WaveSidebar", () => {
     mockUseWaveData.mockReturnValue({ waves: [], loading: false });
     render(<WaveSidebar />);
     expect(screen.getByTestId("wave-sidebar-empty")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Multi-build session selector tests
+  // ---------------------------------------------------------------------------
+
+  const runningSession = (id: string, repo: string): BuildSession => ({
+    id,
+    org: "acme",
+    repo,
+    status: "running",
+    startedAt: new Date().toISOString(),
+  });
+
+  it("does not render active-build-selector when only one session is provided", () => {
+    render(<WaveSidebar sessions={[runningSession("s1", "api")]} activeSessionId="s1" />);
+    expect(screen.queryByTestId("active-build-selector")).not.toBeInTheDocument();
+  });
+
+  it("does not render active-build-selector when sessions prop is empty", () => {
+    render(<WaveSidebar sessions={[]} />);
+    expect(screen.queryByTestId("active-build-selector")).not.toBeInTheDocument();
+  });
+
+  it("renders active-build-selector when multiple sessions and onSelectSession are provided", () => {
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(<WaveSidebar sessions={sessions} activeSessionId="s1" onSelectSession={vi.fn()} />);
+    expect(screen.getByTestId("active-build-selector")).toBeInTheDocument();
+  });
+
+  it("renders a tab for each session in the selector", () => {
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(<WaveSidebar sessions={sessions} activeSessionId="s1" onSelectSession={vi.fn()} />);
+    expect(screen.getByTestId("build-selector-tab-s1")).toBeInTheDocument();
+    expect(screen.getByTestId("build-selector-tab-s2")).toBeInTheDocument();
+  });
+
+  it("marks the active session tab with data-selected=true", () => {
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(<WaveSidebar sessions={sessions} activeSessionId="s2" onSelectSession={vi.fn()} />);
+    expect(screen.getByTestId("build-selector-tab-s2")).toHaveAttribute("data-selected", "true");
+    expect(screen.getByTestId("build-selector-tab-s1")).toHaveAttribute("data-selected", "false");
+  });
+
+  it("calls onSelectSession when a selector tab is clicked", () => {
+    const onSelectSession = vi.fn();
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(
+      <WaveSidebar sessions={sessions} activeSessionId="s1" onSelectSession={onSelectSession} />,
+    );
+    fireEvent.click(screen.getByTestId("build-selector-tab-s2"));
+    expect(onSelectSession).toHaveBeenCalledWith("s2");
+  });
+
+  it("hides active-build-selector when the sidebar is collapsed", () => {
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(<WaveSidebar sessions={sessions} activeSessionId="s1" onSelectSession={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("sidebar-toggle"));
+    expect(screen.queryByTestId("active-build-selector")).not.toBeInTheDocument();
   });
 });

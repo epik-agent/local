@@ -15,13 +15,22 @@ export interface UseBuildStreamResult {
 /**
  * Hook that subscribes to the sidecar token stream and accumulates output lines.
  *
- * Listens to ``sidecar://token`` and ``sidecar://complete`` Tauri events.
- * Each token is appended as a new line.  When a new ``requestId`` is seen, the
- * accumulated lines are reset so only the current build's output is shown.
+ * When ``sessionId`` is provided the hook listens to session-scoped event
+ * channels (``sidecar://token/<sessionId>`` and
+ * ``sidecar://complete/<sessionId>``) so each concurrent build session's output
+ * is displayed independently.  When ``sessionId`` is omitted the hook falls
+ * back to the global ``sidecar://token`` and ``sidecar://complete`` channels
+ * used by the chat sidecar.
  *
- * Event listeners are registered on mount and cleaned up on unmount.
+ * Each token is appended as a new line.  When a new ``requestId`` is seen, the
+ * accumulated lines are reset so only the current request's output is shown.
+ *
+ * Event listeners are registered on mount (or when ``sessionId`` changes) and
+ * cleaned up on unmount.
+ *
+ * :param sessionId: Optional build session ID to scope event listening.
  */
-export function useBuildStream(): UseBuildStreamResult {
+export function useBuildStream(sessionId?: string): UseBuildStreamResult {
   const [lines, setLines] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(false);
   const currentRequestIdRef = useRef<string | null>(null);
@@ -30,8 +39,13 @@ export function useBuildStream(): UseBuildStreamResult {
     let cancelled = false;
     const unlisteners: Array<() => void> = [];
 
+    const tokenChannel =
+      sessionId !== undefined ? `sidecar://token/${sessionId}` : "sidecar://token";
+    const completeChannel =
+      sessionId !== undefined ? `sidecar://complete/${sessionId}` : "sidecar://complete";
+
     const setupListeners = async (): Promise<void> => {
-      const unlistenToken = await listen<TokenPayload>("sidecar://token", (event) => {
+      const unlistenToken = await listen<TokenPayload>(tokenChannel, (event) => {
         if (cancelled) return;
         const { requestId, token } = event.payload;
 
@@ -45,7 +59,7 @@ export function useBuildStream(): UseBuildStreamResult {
         setIsActive(true);
       });
 
-      const unlistenComplete = await listen<CompletePayload>("sidecar://complete", (event) => {
+      const unlistenComplete = await listen<CompletePayload>(completeChannel, (event) => {
         if (cancelled) return;
         if (event.payload.requestId === currentRequestIdRef.current) {
           setIsActive(false);
@@ -68,7 +82,7 @@ export function useBuildStream(): UseBuildStreamResult {
         unlisten();
       }
     };
-  }, []);
+  }, [sessionId]);
 
   return { lines, isActive };
 }
