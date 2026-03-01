@@ -80,4 +80,14 @@ describe("Shell", () => {
     render(<Shell />);
     expect(screen.getByTestId("message-input")).toBeInTheDocument();
   });
+
+  it("renders the wave sidebar", () => {
+    render(<Shell />);
+    expect(screen.getByTestId("wave-sidebar")).toBeInTheDocument();
+  });
+
+  it("renders the build stream panel", () => {
+    render(<Shell />);
+    expect(screen.getByTestId("build-stream-panel")).toBeInTheDocument();
+  });
 });
