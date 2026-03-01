@@ -223,12 +223,9 @@ fn spawn_sidecar(app: &AppHandle) -> Result<CommandChild, String> {
                                     value.get("tool_call_id").and_then(|v| v.as_str()),
                                     value.get("name").and_then(|v| v.as_str()),
                                 ) {
-                                    let args = value
-                                        .get("args")
-                                        .cloned()
-                                        .unwrap_or(serde_json::Value::Object(
-                                            serde_json::Map::new(),
-                                        ));
+                                    let args = value.get("args").cloned().unwrap_or(
+                                        serde_json::Value::Object(serde_json::Map::new()),
+                                    );
                                     let _ = app_handle.emit(
                                         "sidecar://tool_call",
                                         ToolCallPayload {
