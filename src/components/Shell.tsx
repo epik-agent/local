@@ -1,13 +1,18 @@
+import { BuildStreamPanel } from "./BuildStreamPanel";
 import { ChatView } from "./ChatView";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
+import { WaveSidebar } from "./WaveSidebar";
 
 /**
  * Main application shell.
  *
- * Renders the persistent title bar (brand logo, name, theme toggle) and hosts
- * the ``ChatView`` as the primary content zone.  This is the root layout
- * component that composes the full app UI.
+ * Renders the persistent title bar and a three-zone layout:
+ * - Left: ChatView (primary workspace, always visible)
+ * - Right: WaveSidebar (collapsible wave-progress panel)
+ * - Bottom: BuildStreamPanel (collapsible live sidecar output, full width)
+ *
+ * Mirrors the VS Code layout model.
  */
 export function Shell(): React.ReactElement {
   return (
@@ -34,10 +39,17 @@ export function Shell(): React.ReactElement {
         </div>
       </header>
 
-      {/* Primary content — Chat view */}
-      <main className="flex flex-1 overflow-hidden" data-testid="main-content">
-        <ChatView />
-      </main>
+      {/* Body: horizontal zones + bottom panel */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Primary content — Chat + Wave sidebar */}
+        <main className="flex flex-1 overflow-hidden" data-testid="main-content">
+          <ChatView />
+          <WaveSidebar />
+        </main>
+
+        {/* Bottom panel — Build stream (full width) */}
+        <BuildStreamPanel />
+      </div>
     </div>
   );
 }
