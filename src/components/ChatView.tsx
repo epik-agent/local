@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "../hooks/useChat";
 import { MessageBubble } from "./MessageBubble";
 import type { Conversation } from "../lib/conversation";
+import type { SidecarStatus } from "../lib/sidecar";
+
+interface ChatViewProps {
+  sidecarStatus?: SidecarStatus;
+  sidecarError?: string | null;
+}
 
 /**
  * The primary Chat view component.
@@ -14,11 +20,15 @@ import type { Conversation } from "../lib/conversation";
  * Messages are persisted to ``localStorage`` via ``useChat``, so the
  * conversation history survives app restarts.
  */
-export function ChatView(): React.ReactElement {
+export function ChatView({
+  sidecarStatus = "ready",
+  sidecarError = null,
+}: ChatViewProps = {}): React.ReactElement {
   const {
     conversations,
     activeConversation,
     streaming,
+    error,
     newConversation,
     selectConversation,
     deleteConversation,
@@ -59,7 +69,9 @@ export function ChatView(): React.ReactElement {
     [deleteConversation],
   );
 
-  const canSend = inputText.trim().length > 0 && activeConversation !== null;
+  const sidecarReady = sidecarStatus === "ready";
+  const canSend = inputText.trim().length > 0 && activeConversation !== null && sidecarReady;
+  const displayError = sidecarError ?? error;
 
   const messages = activeConversation?.messages ?? [];
   const lastMessage = messages.at(-1);
@@ -215,6 +227,21 @@ export function ChatView(): React.ReactElement {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Error banner */}
+        {displayError !== null && (
+          <div
+            className="border-t px-4 py-2 text-xs"
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              borderColor: "var(--border)",
+              color: "var(--color-error, #e53e3e)",
+            }}
+            data-testid="error-banner"
+          >
+            {displayError}
+          </div>
+        )}
+
         {/* Input bar */}
         <div
           className="border-t px-4 py-3"
@@ -231,11 +258,13 @@ export function ChatView(): React.ReactElement {
               }}
               onKeyDown={handleKeyDown}
               placeholder={
-                activeConversation === null
-                  ? "Create a conversation to start chatting…"
-                  : "Type a message… (Enter to send, Shift+Enter for newline)"
+                !sidecarReady
+                  ? "Waiting for sidecar…"
+                  : activeConversation === null
+                    ? "Create a conversation to start chatting…"
+                    : "Type a message… (Enter to send, Shift+Enter for newline)"
               }
-              disabled={streaming}
+              disabled={streaming || !sidecarReady}
               rows={1}
               className="flex-1 resize-none rounded-xl px-4 py-2.5 text-sm outline-none transition-colors"
               style={{
@@ -261,7 +290,7 @@ export function ChatView(): React.ReactElement {
               data-testid="send-button"
               aria-label="Send message"
             >
-              {streaming ? "…" : "Send"}
+              {streaming ? "…" : sidecarStatus === "starting" ? "Starting…" : "Send"}
             </button>
           </div>
         </div>
