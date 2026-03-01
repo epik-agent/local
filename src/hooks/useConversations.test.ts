@@ -1,48 +1,22 @@
 import { renderHook, act } from "@testing-library/react";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { useConversations } from "./useConversations";
 import type { Conversation } from "../lib/conversation";
 
 const STORAGE_KEY = "epik-conversations";
 
-function makeStore(): Storage {
-  const store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => {
-      store[key] = value;
-    },
-    removeItem: (key: string) => {
-      Reflect.deleteProperty(store, key);
-    },
-    clear: () => {
-      for (const key of Object.keys(store)) {
-        Reflect.deleteProperty(store, key);
-      }
-    },
-    key: (index: number) => Object.keys(store)[index] ?? null,
-    get length() {
-      return Object.keys(store).length;
-    },
-  };
-}
-
 describe("useConversations", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", makeStore());
+    localStorage.clear();
   });
 
-  it("initialises with an empty conversations list", () => {
+  it("initialises with an empty conversations list and null active conversation", () => {
     const { result } = renderHook(() => useConversations());
     expect(result.current.conversations).toEqual([]);
-  });
-
-  it("initialises with null active conversation", () => {
-    const { result } = renderHook(() => useConversations());
     expect(result.current.activeConversation).toBeNull();
   });
 
-  it("creates a new conversation and returns it", () => {
+  it("creates a new conversation and sets it as active", () => {
     const { result } = renderHook(() => useConversations());
     act(() => {
       result.current.createConversation();
@@ -51,13 +25,6 @@ describe("useConversations", () => {
     expect(result.current.conversations[0]).toMatchObject({
       title: "New conversation",
       messages: [],
-    });
-  });
-
-  it("sets the new conversation as active", () => {
-    const { result } = renderHook(() => useConversations());
-    act(() => {
-      result.current.createConversation();
     });
     const convId = result.current.conversations[0]?.id;
     expect(result.current.activeConversation?.id).toBe(convId);
@@ -89,7 +56,7 @@ describe("useConversations", () => {
     expect(result.current.activeConversation?.id).toBe(firstId);
   });
 
-  it("deletes a conversation by id", () => {
+  it("deletes a conversation by id and clears active when it is the active one", () => {
     const { result } = renderHook(() => useConversations());
     act(() => {
       result.current.createConversation();
@@ -99,17 +66,6 @@ describe("useConversations", () => {
       result.current.deleteConversation(convId);
     });
     expect(result.current.conversations).toHaveLength(0);
-  });
-
-  it("clears the active conversation when the active one is deleted", () => {
-    const { result } = renderHook(() => useConversations());
-    act(() => {
-      result.current.createConversation();
-    });
-    const convId = result.current.conversations[0]?.id ?? "";
-    act(() => {
-      result.current.deleteConversation(convId);
-    });
     expect(result.current.activeConversation).toBeNull();
   });
 
@@ -133,7 +89,7 @@ describe("useConversations", () => {
     expect(result.current.conversations).toHaveLength(1);
   });
 
-  it("persists conversations to localStorage", () => {
+  it("persists conversations to localStorage and restores on mount", () => {
     const { result } = renderHook(() => useConversations());
     act(() => {
       result.current.createConversation();
@@ -142,9 +98,8 @@ describe("useConversations", () => {
     expect(stored).not.toBeNull();
     const parsed = JSON.parse(stored ?? "[]") as Conversation[];
     expect(parsed).toHaveLength(1);
-  });
 
-  it("loads persisted conversations from localStorage on mount", () => {
+    // Restore from localStorage
     const existing: Conversation[] = [
       {
         id: "abc-123",
@@ -155,10 +110,9 @@ describe("useConversations", () => {
       },
     ];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-
-    const { result } = renderHook(() => useConversations());
-    expect(result.current.conversations).toHaveLength(1);
-    expect(result.current.conversations[0]?.id).toBe("abc-123");
+    const { result: result2 } = renderHook(() => useConversations());
+    expect(result2.current.conversations).toHaveLength(1);
+    expect(result2.current.conversations[0]?.id).toBe("abc-123");
   });
 
   it("updates a conversation's messages", () => {

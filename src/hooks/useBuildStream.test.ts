@@ -4,11 +4,18 @@ import { listen } from "@tauri-apps/api/event";
 import { useBuildStream } from "./useBuildStream";
 import type { TokenPayload, CompletePayload } from "../lib/sidecar";
 
-vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(),
-}));
-
 const mockListen = vi.mocked(listen);
+
+type ListenerMap = Record<string, (event: { payload: unknown }) => void>;
+
+function setupListeners(): ListenerMap {
+  const listeners: ListenerMap = {};
+  mockListen.mockImplementation(async (channel, cb) => {
+    listeners[channel as string] = cb as (event: { payload: unknown }) => void;
+    return () => undefined;
+  });
+  return listeners;
+}
 
 describe("useBuildStream", () => {
   beforeEach(() => {
@@ -22,30 +29,18 @@ describe("useBuildStream", () => {
     expect(result.current.isActive).toBe(false);
   });
 
-  it("listens for sidecar://token events on mount", async () => {
+  it("listens for sidecar://token and sidecar://complete events on mount", async () => {
     renderHook(() => useBuildStream());
     await act(async () => {
       await Promise.resolve();
     });
     const channels = mockListen.mock.calls.map((c) => c[0]);
     expect(channels).toContain("sidecar://token");
-  });
-
-  it("listens for sidecar://complete events on mount", async () => {
-    renderHook(() => useBuildStream());
-    await act(async () => {
-      await Promise.resolve();
-    });
-    const channels = mockListen.mock.calls.map((c) => c[0]);
     expect(channels).toContain("sidecar://complete");
   });
 
-  it("accumulates token events as lines", async () => {
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
+  it("accumulates token events as lines and sets isActive true", async () => {
+    const listeners = setupListeners();
 
     const { result } = renderHook(() => useBuildStream());
     await act(async () => {
@@ -57,7 +52,6 @@ describe("useBuildStream", () => {
         payload: { requestId: "req-1", token: "Hello " } satisfies TokenPayload,
       });
     });
-
     act(() => {
       listeners["sidecar://token"]({
         payload: { requestId: "req-1", token: "world" } satisfies TokenPayload,
@@ -65,35 +59,11 @@ describe("useBuildStream", () => {
     });
 
     expect(result.current.lines).toEqual(["Hello ", "world"]);
-  });
-
-  it("sets isActive to true when a token arrives", async () => {
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
-
-    const { result } = renderHook(() => useBuildStream());
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    act(() => {
-      listeners["sidecar://token"]({
-        payload: { requestId: "req-1", token: "data" } satisfies TokenPayload,
-      });
-    });
-
     expect(result.current.isActive).toBe(true);
   });
 
   it("sets isActive to false when a complete event arrives", async () => {
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
+    const listeners = setupListeners();
 
     const { result } = renderHook(() => useBuildStream());
     await act(async () => {
@@ -105,13 +75,9 @@ describe("useBuildStream", () => {
         payload: { requestId: "req-1", token: "data" } satisfies TokenPayload,
       });
     });
-
     act(() => {
       listeners["sidecar://complete"]({
-        payload: {
-          requestId: "req-1",
-          fullText: "data",
-        } satisfies CompletePayload,
+        payload: { requestId: "req-1", fullText: "data" } satisfies CompletePayload,
       });
     });
 
@@ -119,32 +85,24 @@ describe("useBuildStream", () => {
   });
 
   it("resets lines on a new request (new requestId)", async () => {
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
+    const listeners = setupListeners();
 
     const { result } = renderHook(() => useBuildStream());
     await act(async () => {
       await Promise.resolve();
     });
 
-    // First build
     act(() => {
       listeners["sidecar://token"]({
         payload: { requestId: "req-1", token: "first line" } satisfies TokenPayload,
       });
     });
-
-    // New build (new requestId)
     act(() => {
       listeners["sidecar://token"]({
         payload: { requestId: "req-2", token: "second build" } satisfies TokenPayload,
       });
     });
 
-    // Lines should be reset to only the new build's output
     expect(result.current.lines).toEqual(["second build"]);
   });
 
@@ -168,7 +126,7 @@ describe("useBuildStream", () => {
     expect(unlisten2).toHaveBeenCalled();
   });
 
-  it("uses session-scoped channel when sessionId is provided", async () => {
+  it("uses session-scoped channels and not global channels when sessionId is provided", async () => {
     renderHook(() => useBuildStream("session-abc"));
     await act(async () => {
       await Promise.resolve();
@@ -176,24 +134,12 @@ describe("useBuildStream", () => {
     const channels = mockListen.mock.calls.map((c) => c[0]);
     expect(channels).toContain("sidecar://token/session-abc");
     expect(channels).toContain("sidecar://complete/session-abc");
-  });
-
-  it("does not listen to global channel when sessionId is provided", async () => {
-    renderHook(() => useBuildStream("session-abc"));
-    await act(async () => {
-      await Promise.resolve();
-    });
-    const channels = mockListen.mock.calls.map((c) => c[0]);
     expect(channels).not.toContain("sidecar://token");
     expect(channels).not.toContain("sidecar://complete");
   });
 
   it("accumulates tokens from session-scoped channel", async () => {
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
+    const listeners = setupListeners();
 
     const { result } = renderHook(() => useBuildStream("session-xyz"));
     await act(async () => {

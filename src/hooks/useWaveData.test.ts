@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useWaveData } from "./useWaveData";
 import type { Wave } from "../lib/build";
 
-// Mock useProjectScope
 vi.mock("./useProjectScope", () => ({
   useProjectScope: vi.fn(),
 }));
@@ -11,7 +10,6 @@ vi.mock("./useProjectScope", () => ({
 import { useProjectScope } from "./useProjectScope";
 const mockUseProjectScope = vi.mocked(useProjectScope);
 
-// Mock fetchWaves
 vi.mock("../lib/waveApi", () => ({
   fetchWaves: vi.fn(),
 }));
@@ -23,12 +21,7 @@ const sampleWaves: Wave[] = [
   {
     number: 1,
     issues: [
-      {
-        number: 1,
-        title: "Set up repo",
-        status: "done",
-        isActive: false,
-      },
+      { number: 1, title: "Set up repo", status: "done", isActive: false },
       {
         number: 2,
         title: "Add CI",
@@ -42,14 +35,7 @@ const sampleWaves: Wave[] = [
   },
   {
     number: 2,
-    issues: [
-      {
-        number: 3,
-        title: "Add dashboard",
-        status: "todo",
-        isActive: false,
-      },
-    ],
+    issues: [{ number: 3, title: "Add dashboard", status: "todo", isActive: false }],
   },
 ];
 
@@ -73,24 +59,12 @@ describe("useWaveData", () => {
   });
 
   it("initialises with empty waves array", () => {
-    // Use a never-resolving promise so the fetch stays in-flight and the
-    // initial empty state can be observed synchronously before settling.
     mockFetchWaves.mockReturnValue(new Promise(() => undefined));
     const { result } = renderHook(() => useWaveData());
     expect(result.current.waves).toEqual([]);
   });
 
-  it("loading is false after the initial fetch resolves", async () => {
-    const { result } = renderHook(() => useWaveData());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(result.current.loading).toBe(false);
-  });
-
-  it("fetches waves when org and repo are set", async () => {
+  it("fetches waves when org and repo are set, then clears loading", async () => {
     const { result } = renderHook(() => useWaveData());
 
     await act(async () => {
@@ -99,13 +73,17 @@ describe("useWaveData", () => {
 
     expect(mockFetchWaves).toHaveBeenCalledWith("epik-agent", "local");
     expect(result.current.waves).toEqual(sampleWaves);
+    expect(result.current.loading).toBe(false);
   });
 
-  it("does not fetch when org is null", async () => {
+  it.each([
+    { org: null as null, repo: "local", scopeLabel: null },
+    { org: "epik-agent", repo: null as null, scopeLabel: null },
+  ])("does not fetch when org=$org or repo=$repo is null", async ({ org, repo, scopeLabel }) => {
     mockUseProjectScope.mockReturnValue({
-      org: null,
-      repo: "local",
-      scopeLabel: null,
+      org,
+      repo,
+      scopeLabel,
       setOrg: vi.fn(),
       setRepo: vi.fn(),
     });
@@ -117,37 +95,6 @@ describe("useWaveData", () => {
     });
 
     expect(mockFetchWaves).not.toHaveBeenCalled();
-  });
-
-  it("does not fetch when repo is null", async () => {
-    mockUseProjectScope.mockReturnValue({
-      org: "epik-agent",
-      repo: null,
-      scopeLabel: null,
-      setOrg: vi.fn(),
-      setRepo: vi.fn(),
-    });
-
-    renderHook(() => useWaveData());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(mockFetchWaves).not.toHaveBeenCalled();
-  });
-
-  it("returns empty waves when no project is selected", () => {
-    mockUseProjectScope.mockReturnValue({
-      org: null,
-      repo: null,
-      scopeLabel: null,
-      setOrg: vi.fn(),
-      setRepo: vi.fn(),
-    });
-
-    const { result } = renderHook(() => useWaveData());
-    expect(result.current.waves).toEqual([]);
   });
 
   it("auto-refreshes after the configured interval", async () => {
@@ -177,7 +124,6 @@ describe("useWaveData", () => {
 
     const { result } = renderHook(() => useWaveData());
 
-    // loading becomes true after effect fires
     await act(async () => {
       await Promise.resolve();
     });

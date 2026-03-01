@@ -6,6 +6,30 @@ import type { ToolCallPayload, ToolResultPayload } from "../lib/mcp";
 
 const mockListen = vi.mocked(listen);
 
+type ListenerMap = Record<string, (event: { payload: unknown }) => void>;
+
+function setupListeners(): ListenerMap {
+  const listeners: ListenerMap = {};
+  mockListen.mockImplementation(async (channel, cb) => {
+    listeners[channel as string] = cb as (event: { payload: unknown }) => void;
+    return () => undefined;
+  });
+  return listeners;
+}
+
+async function renderWithListeners(): Promise<{
+  result: ReturnType<typeof renderHook<ReturnType<typeof useMcpTools>, unknown>>["result"];
+  listeners: ListenerMap;
+  unmount: () => void;
+}> {
+  const listeners = setupListeners();
+  const { result, unmount } = renderHook(() => useMcpTools());
+  await act(async () => {
+    await Promise.resolve();
+  });
+  return { result, listeners, unmount };
+}
+
 describe("useMcpTools", () => {
   beforeEach(() => {
     mockListen.mockReset();
@@ -17,8 +41,16 @@ describe("useMcpTools", () => {
     expect(result.current.toolCalls).toEqual({});
   });
 
-  it("listens for sidecar://tool_call and sidecar://tool_result on mount", async () => {
-    renderHook(() => useMcpTools());
+  it("listens for sidecar://tool_call and sidecar://tool_result on mount and unlistens on unmount", async () => {
+    const unlisten1 = vi.fn();
+    const unlisten2 = vi.fn();
+    const unlisteners = [unlisten1, unlisten2];
+    let callCount = 0;
+    mockListen.mockImplementation(async () => {
+      return unlisteners[callCount++] ?? (() => undefined);
+    });
+
+    const { unmount } = renderHook(() => useMcpTools());
 
     await act(async () => {
       await Promise.resolve();
@@ -27,20 +59,14 @@ describe("useMcpTools", () => {
     const channels = mockListen.mock.calls.map((c) => c[0]);
     expect(channels).toContain("sidecar://tool_call");
     expect(channels).toContain("sidecar://tool_result");
+
+    unmount();
+    expect(unlisten1).toHaveBeenCalled();
+    expect(unlisten2).toHaveBeenCalled();
   });
 
   it("adds a pending tool call when sidecar://tool_call event fires", async () => {
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
-
-    const { result } = renderHook(() => useMcpTools());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
+    const { result, listeners } = await renderWithListeners();
 
     act(() => {
       listeners["sidecar://tool_call"]({
@@ -64,17 +90,7 @@ describe("useMcpTools", () => {
   });
 
   it("updates a tool call to success when sidecar://tool_result fires", async () => {
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
-
-    const { result } = renderHook(() => useMcpTools());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
+    const { result, listeners } = await renderWithListeners();
 
     act(() => {
       listeners["sidecar://tool_call"]({
@@ -86,7 +102,6 @@ describe("useMcpTools", () => {
         } satisfies ToolCallPayload,
       });
     });
-
     act(() => {
       listeners["sidecar://tool_result"]({
         payload: {
@@ -106,17 +121,7 @@ describe("useMcpTools", () => {
   });
 
   it("updates a tool call to error when sidecar://tool_result fires with isError=true", async () => {
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
-
-    const { result } = renderHook(() => useMcpTools());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
+    const { result, listeners } = await renderWithListeners();
 
     act(() => {
       listeners["sidecar://tool_call"]({
@@ -128,7 +133,6 @@ describe("useMcpTools", () => {
         } satisfies ToolCallPayload,
       });
     });
-
     act(() => {
       listeners["sidecar://tool_result"]({
         payload: {
@@ -148,17 +152,7 @@ describe("useMcpTools", () => {
   });
 
   it("clears all tool calls when clearToolCalls is called", async () => {
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
-
-    const { result } = renderHook(() => useMcpTools());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
+    const { result, listeners } = await renderWithListeners();
 
     act(() => {
       listeners["sidecar://tool_call"]({
@@ -178,26 +172,5 @@ describe("useMcpTools", () => {
     });
 
     expect(result.current.toolCalls).toEqual({});
-  });
-
-  it("removes unlisten callbacks on unmount", async () => {
-    const unlisten1 = vi.fn();
-    const unlisten2 = vi.fn();
-    const unlisteners = [unlisten1, unlisten2];
-    let callCount = 0;
-    mockListen.mockImplementation(async () => {
-      return unlisteners[callCount++] ?? (() => undefined);
-    });
-
-    const { unmount } = renderHook(() => useMcpTools());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    unmount();
-
-    expect(unlisten1).toHaveBeenCalled();
-    expect(unlisten2).toHaveBeenCalled();
   });
 });

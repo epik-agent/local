@@ -1,18 +1,23 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useClaudeStream } from "./useClaudeStream";
 import type { TokenPayload, CompletePayload, ErrorPayload } from "../lib/sidecar";
 
 const mockInvoke = vi.mocked(invoke);
-
-vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(),
-}));
-
-import { listen } from "@tauri-apps/api/event";
-
 const mockListen = vi.mocked(listen);
+
+type ListenerMap = Record<string, (event: { payload: unknown }) => void>;
+
+function setupListeners(): ListenerMap {
+  const listeners: ListenerMap = {};
+  mockListen.mockImplementation(async (channel, cb) => {
+    listeners[channel as string] = cb as (event: { payload: unknown }) => void;
+    return () => undefined;
+  });
+  return listeners;
+}
 
 describe("useClaudeStream", () => {
   beforeEach(() => {
@@ -21,23 +26,15 @@ describe("useClaudeStream", () => {
     mockListen.mockResolvedValue(() => undefined);
   });
 
-  it("initialises with empty tokens and null response", () => {
+  it("initialises with empty tokens, null response, not streaming, and null error", () => {
     const { result } = renderHook(() => useClaudeStream());
     expect(result.current.tokens).toEqual([]);
     expect(result.current.response).toBeNull();
-  });
-
-  it("initialises with not streaming state", () => {
-    const { result } = renderHook(() => useClaudeStream());
     expect(result.current.streaming).toBe(false);
-  });
-
-  it("initialises with null error", () => {
-    const { result } = renderHook(() => useClaudeStream());
     expect(result.current.error).toBeNull();
   });
 
-  it("calls sidecar_send_message when sendMessage is invoked", async () => {
+  it("calls sidecar_send_message with message and a requestId when sendMessage is invoked", async () => {
     mockInvoke.mockResolvedValueOnce(undefined);
     const { result } = renderHook(() => useClaudeStream());
 
@@ -45,23 +42,10 @@ describe("useClaudeStream", () => {
       await result.current.sendMessage("Hello Claude");
     });
 
-    expect(mockInvoke).toHaveBeenCalledWith(
-      "sidecar_send_message",
-      expect.objectContaining({ message: "Hello Claude" }),
-    );
-  });
-
-  it("passes a requestId to sidecar_send_message", async () => {
-    mockInvoke.mockResolvedValueOnce(undefined);
-    const { result } = renderHook(() => useClaudeStream());
-
-    await act(async () => {
-      await result.current.sendMessage("Hello");
-    });
-
     const callArgs = mockInvoke.mock.calls[0];
     expect(callArgs[0]).toBe("sidecar_send_message");
-    const payload = callArgs[1] as { requestId: string };
+    const payload = callArgs[1] as { message: string; requestId: string };
+    expect(payload.message).toBe("Hello Claude");
     expect(typeof payload.requestId).toBe("string");
     expect(payload.requestId.length).toBeGreaterThan(0);
   });
@@ -87,14 +71,9 @@ describe("useClaudeStream", () => {
     });
   });
 
-  it("accumulates tokens from sidecar://token events", async () => {
+  it("accumulates tokens from sidecar://token events, ignoring other requestIds", async () => {
     mockInvoke.mockResolvedValueOnce(undefined);
-
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
+    const listeners = setupListeners();
 
     const { result } = renderHook(() => useClaudeStream());
 
@@ -113,52 +92,23 @@ describe("useClaudeStream", () => {
         payload: { requestId, token: "Hello" } satisfies TokenPayload,
       });
     });
-
     act(() => {
       listeners["sidecar://token"]({
         payload: { requestId, token: " world" } satisfies TokenPayload,
       });
     });
-
-    expect(result.current.tokens).toEqual(["Hello", " world"]);
-  });
-
-  it("ignores token events for different requestIds", async () => {
-    mockInvoke.mockResolvedValueOnce(undefined);
-
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
-
-    const { result } = renderHook(() => useClaudeStream());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    await act(async () => {
-      await result.current.sendMessage("Hello");
-    });
-
     act(() => {
       listeners["sidecar://token"]({
         payload: { requestId: "different-id", token: "ignored" } satisfies TokenPayload,
       });
     });
 
-    expect(result.current.tokens).toEqual([]);
+    expect(result.current.tokens).toEqual(["Hello", " world"]);
   });
 
   it("sets response and clears streaming on complete event", async () => {
     mockInvoke.mockResolvedValueOnce(undefined);
-
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
+    const listeners = setupListeners();
 
     const { result } = renderHook(() => useClaudeStream());
 
@@ -187,12 +137,7 @@ describe("useClaudeStream", () => {
 
   it("sets error state on sidecar://error event", async () => {
     mockInvoke.mockResolvedValueOnce(undefined);
-
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
+    const listeners = setupListeners();
 
     const { result } = renderHook(() => useClaudeStream());
 
@@ -221,12 +166,7 @@ describe("useClaudeStream", () => {
 
   it("resets tokens and response when a new message is sent", async () => {
     mockInvoke.mockResolvedValue(undefined);
-
-    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-    mockListen.mockImplementation(async (channel, cb) => {
-      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
-      return () => undefined;
-    });
+    const listeners = setupListeners();
 
     const { result } = renderHook(() => useClaudeStream());
 
@@ -234,7 +174,6 @@ describe("useClaudeStream", () => {
       await Promise.resolve();
     });
 
-    // First message
     await act(async () => {
       await result.current.sendMessage("First");
     });
@@ -250,7 +189,6 @@ describe("useClaudeStream", () => {
       });
     });
 
-    // Second message should reset state
     await act(async () => {
       await result.current.sendMessage("Second");
     });
@@ -272,20 +210,7 @@ describe("useClaudeStream", () => {
     expect(result.current.streaming).toBe(false);
   });
 
-  it("listens for sidecar event channels on mount", async () => {
-    renderHook(() => useClaudeStream());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    const channels = mockListen.mock.calls.map((c) => c[0]);
-    expect(channels).toContain("sidecar://token");
-    expect(channels).toContain("sidecar://complete");
-    expect(channels).toContain("sidecar://error");
-  });
-
-  it("calls all unlisten functions on unmount", async () => {
+  it("listens for sidecar://token, sidecar://complete, sidecar://error on mount and unlistens on unmount", async () => {
     const unlisten1 = vi.fn();
     const unlisten2 = vi.fn();
     const unlisten3 = vi.fn();
@@ -301,6 +226,11 @@ describe("useClaudeStream", () => {
       await Promise.resolve();
     });
 
+    const channels = mockListen.mock.calls.map((c) => c[0]);
+    expect(channels).toContain("sidecar://token");
+    expect(channels).toContain("sidecar://complete");
+    expect(channels).toContain("sidecar://error");
+
     unmount();
 
     expect(unlisten1).toHaveBeenCalled();
@@ -313,7 +243,6 @@ describe("useClaudeStream", () => {
 
     const { result } = renderHook(() => useClaudeStream());
 
-    // Start a message first to get a requestId
     await act(async () => {
       await result.current.sendMessage("Hello");
     });
