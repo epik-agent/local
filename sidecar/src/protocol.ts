@@ -31,7 +31,39 @@ export interface ShutdownRequest {
   type: "shutdown";
 }
 
-export type SidecarRequest = SendMessageRequest | CancelRequest | ShutdownRequest;
+/**
+ * Configuration for a single MCP server process.
+ */
+export interface McpServerConfig {
+  /** Human-readable label for this MCP server. */
+  name: string;
+  /** Path to the MCP server executable or script. */
+  command: string;
+  /** Command-line arguments for the MCP server process. */
+  args: string[];
+  /** Optional environment variables to set for the MCP server process. */
+  env?: Record<string, string>;
+}
+
+/**
+ * Request to update the MCP server configuration and optional system prompt
+ * used for all future Claude sessions.
+ */
+export interface SetMcpConfigRequest {
+  type: "set_mcp_config";
+  /** List of MCP servers to load as tool providers. */
+  mcp_servers: McpServerConfig[];
+  /**
+   * Optional system prompt prepended to every Claude session.
+   */
+  system_prompt?: string;
+}
+
+export type SidecarRequest =
+  | SendMessageRequest
+  | CancelRequest
+  | ShutdownRequest
+  | SetMcpConfigRequest;
 
 // ---------------------------------------------------------------------------
 // Events (stdout — Node.js → Rust)
@@ -59,4 +91,38 @@ export interface ErrorEvent {
   message: string;
 }
 
-export type SidecarEvent = ReadyEvent | TokenEvent | CompleteEvent | ErrorEvent;
+/**
+ * Emitted when Claude invokes an MCP tool during a streaming session.
+ */
+export interface ToolCallEvent {
+  type: "tool_call";
+  request_id: string;
+  /** Unique identifier for this tool invocation. */
+  tool_call_id: string;
+  /** Name of the MCP tool being called. */
+  name: string;
+  /** Arguments passed to the tool. */
+  args: Record<string, unknown>;
+}
+
+/**
+ * Emitted when an MCP tool call completes (successfully or with an error).
+ */
+export interface ToolResultEvent {
+  type: "tool_result";
+  request_id: string;
+  /** Matches the ``tool_call_id`` from the corresponding ``ToolCallEvent``. */
+  tool_call_id: string;
+  /** Serialised result from the tool. */
+  result: string;
+  /** Whether the tool call encountered an error. */
+  is_error: boolean;
+}
+
+export type SidecarEvent =
+  | ReadyEvent
+  | TokenEvent
+  | CompleteEvent
+  | ErrorEvent
+  | ToolCallEvent
+  | ToolResultEvent;

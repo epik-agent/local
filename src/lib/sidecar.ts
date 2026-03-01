@@ -80,6 +80,36 @@ export interface ReadyEvent {
   type: "ready";
 }
 
+/**
+ * Tauri event payload emitted on the ``sidecar://tool_call`` channel when an
+ * MCP tool is invoked by Claude during a streaming session.
+ */
+export interface ToolCallPayload {
+  /** Matches the ``requestId`` of the conversation turn. */
+  requestId: string;
+  /** Unique identifier for this tool invocation. */
+  toolCallId: string;
+  /** Name of the MCP tool being called. */
+  name: string;
+  /** Arguments passed to the tool. */
+  args: Record<string, unknown>;
+}
+
+/**
+ * Tauri event payload emitted on the ``sidecar://tool_result`` channel when
+ * an MCP tool call completes (successfully or with an error).
+ */
+export interface ToolResultPayload {
+  /** Matches the ``requestId`` of the conversation turn. */
+  requestId: string;
+  /** Matches the ``toolCallId`` from the corresponding ``ToolCallPayload``. */
+  toolCallId: string;
+  /** Serialised result from the tool. */
+  result: string;
+  /** Whether the tool call encountered an error. */
+  isError: boolean;
+}
+
 /** Union of all events the sidecar can emit. */
 export type SidecarEvent = TokenEvent | CompleteEvent | ErrorEvent | ReadyEvent;
 
@@ -122,6 +152,44 @@ export interface CancelPayload {
  * Status of the sidecar process.
  */
 export type SidecarStatus = "stopped" | "starting" | "ready" | "error";
+
+/**
+ * Configuration for a single MCP server that the sidecar should load as a
+ * tool provider for Claude Code sessions.
+ */
+export interface McpServerConfig {
+  /** Human-readable label for this MCP server. */
+  name: string;
+  /** Path to the MCP server executable or script. */
+  command: string;
+  /** Command-line arguments for the MCP server process. */
+  args: string[];
+  /** Optional environment variables to set for the MCP server process. */
+  env?: Record<string, string>;
+}
+
+/**
+ * MCP configuration sent to the sidecar via the ``sidecar_set_mcp_config``
+ * Tauri command.  Replaces the current MCP server list and optional system
+ * prompt for all future Claude sessions.
+ */
+export interface SidecarMcpConfig {
+  /** List of MCP servers to load as tool providers. */
+  mcpServers: McpServerConfig[];
+  /**
+   * Optional system prompt prepended to every Claude session.  Useful for
+   * giving Claude context about the project and its role as an Epik planning
+   * assistant.
+   */
+  systemPrompt?: string;
+}
+
+/**
+ * Payload for the ``sidecar_set_mcp_config`` Tauri command.
+ */
+export interface SetMcpConfigPayload {
+  config: SidecarMcpConfig;
+}
 
 /**
  * Tauri event payload emitted on the ``sidecar://token`` channel.

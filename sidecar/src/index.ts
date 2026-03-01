@@ -9,15 +9,20 @@
  *   2. Rust writes ``send_message`` requests to stdin.
  *   3. Sidecar streams ``token`` events and a final ``complete`` event.
  *   4. Rust may send ``cancel`` to abort an in-flight request.
- *   5. Rust sends ``shutdown`` (or closes stdin) to terminate cleanly.
+ *   5. Rust sends ``set_mcp_config`` to update MCP server list and system prompt.
+ *   6. Rust sends ``shutdown`` (or closes stdin) to terminate cleanly.
  */
 
 import { streamClaudeResponse } from "./claude-session.js";
 import { listenStdin, writeEvent } from "./stdio-ipc.js";
-import type { SidecarRequest } from "./protocol.js";
+import type { SidecarRequest, McpServerConfig } from "./protocol.js";
 
 /** Map of in-flight request IDs to their AbortController. */
 const inFlight = new Map<string, AbortController>();
+
+/** Current MCP session configuration. */
+let currentMcpServers: McpServerConfig[] = [];
+let currentSystemPrompt: string | undefined;
 
 function handleRequest(request: SidecarRequest): void {
   switch (request.type) {
@@ -40,8 +45,14 @@ function handleRequest(request: SidecarRequest): void {
             inFlight.delete(request_id);
             writeEvent(event);
           },
+          onToolCall: (event) => writeEvent(event),
+          onToolResult: (event) => writeEvent(event),
         },
         controller.signal,
+        {
+          mcpServers: currentMcpServers,
+          systemPrompt: currentSystemPrompt,
+        },
       );
       break;
     }
@@ -53,6 +64,12 @@ function handleRequest(request: SidecarRequest): void {
         controller.abort();
         inFlight.delete(request_id);
       }
+      break;
+    }
+
+    case "set_mcp_config": {
+      currentMcpServers = request.mcp_servers;
+      currentSystemPrompt = request.system_prompt;
       break;
     }
 

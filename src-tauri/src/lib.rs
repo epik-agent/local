@@ -16,6 +16,16 @@ pub struct ConversationTurn {
     pub content: String,
 }
 
+/// Configuration for a single MCP server process.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpServerConfig {
+    pub name: String,
+    pub command: String,
+    pub args: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub env: Option<std::collections::HashMap<String, String>>,
+}
+
 /// Message sent to the sidecar to start a streaming Claude session.
 #[derive(Debug, Serialize)]
 struct SendMessageRequest {
@@ -40,6 +50,16 @@ struct CancelRequest {
 struct ShutdownRequest {
     #[serde(rename = "type")]
     kind: &'static str,
+}
+
+/// Message sent to the sidecar to update MCP server configuration.
+#[derive(Debug, Serialize)]
+struct SetMcpConfigRequest {
+    #[serde(rename = "type")]
+    kind: &'static str,
+    mcp_servers: Vec<McpServerConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system_prompt: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -75,6 +95,29 @@ struct ErrorPayload {
     #[serde(rename = "requestId")]
     request_id: String,
     message: String,
+}
+
+/// Emitted on ``sidecar://tool_call`` when Claude invokes an MCP tool.
+#[derive(Debug, Clone, Serialize)]
+struct ToolCallPayload {
+    #[serde(rename = "requestId")]
+    request_id: String,
+    #[serde(rename = "toolCallId")]
+    tool_call_id: String,
+    name: String,
+    args: serde_json::Value,
+}
+
+/// Emitted on ``sidecar://tool_result`` when an MCP tool call completes.
+#[derive(Debug, Clone, Serialize)]
+struct ToolResultPayload {
+    #[serde(rename = "requestId")]
+    request_id: String,
+    #[serde(rename = "toolCallId")]
+    tool_call_id: String,
+    result: String,
+    #[serde(rename = "isError")]
+    is_error: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -173,6 +216,51 @@ fn spawn_sidecar(app: &AppHandle) -> Result<CommandChild, String> {
                                         message,
                                     },
                                 );
+                            }
+                            "tool_call" => {
+                                if let (Some(request_id), Some(tool_call_id), Some(name)) = (
+                                    value.get("request_id").and_then(|v| v.as_str()),
+                                    value.get("tool_call_id").and_then(|v| v.as_str()),
+                                    value.get("name").and_then(|v| v.as_str()),
+                                ) {
+                                    let args = value.get("args").cloned().unwrap_or(
+                                        serde_json::Value::Object(serde_json::Map::new()),
+                                    );
+                                    let _ = app_handle.emit(
+                                        "sidecar://tool_call",
+                                        ToolCallPayload {
+                                            request_id: request_id.to_string(),
+                                            tool_call_id: tool_call_id.to_string(),
+                                            name: name.to_string(),
+                                            args,
+                                        },
+                                    );
+                                }
+                            }
+                            "tool_result" => {
+                                if let (Some(request_id), Some(tool_call_id)) = (
+                                    value.get("request_id").and_then(|v| v.as_str()),
+                                    value.get("tool_call_id").and_then(|v| v.as_str()),
+                                ) {
+                                    let result = value
+                                        .get("result")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("")
+                                        .to_string();
+                                    let is_error = value
+                                        .get("is_error")
+                                        .and_then(|v| v.as_bool())
+                                        .unwrap_or(false);
+                                    let _ = app_handle.emit(
+                                        "sidecar://tool_result",
+                                        ToolResultPayload {
+                                            request_id: request_id.to_string(),
+                                            tool_call_id: tool_call_id.to_string(),
+                                            result,
+                                            is_error,
+                                        },
+                                    );
+                                }
                             }
                             _ => {}
                         }
@@ -312,6 +400,33 @@ async fn sidecar_cancel(
     )
 }
 
+/// Update the MCP server configuration and optional system prompt used by the
+/// sidecar for all future Claude sessions.
+///
+/// The new configuration takes effect immediately for any subsequent
+/// ``send_message`` requests.  In-flight requests are not affected.
+#[tauri::command]
+async fn sidecar_set_mcp_config(
+    state: State<'_, SidecarState>,
+    #[allow(non_snake_case)] mcpServers: Vec<McpServerConfig>,
+    #[allow(non_snake_case)] systemPrompt: Option<String>,
+) -> Result<(), String> {
+    let mut guard = state.0.lock().map_err(|e| e.to_string())?;
+
+    let child = guard
+        .as_mut()
+        .ok_or_else(|| "Sidecar is not running".to_string())?;
+
+    write_to_sidecar(
+        child,
+        &SetMcpConfigRequest {
+            kind: "set_mcp_config",
+            mcp_servers: mcpServers,
+            system_prompt: systemPrompt,
+        },
+    )
+}
+
 // ---------------------------------------------------------------------------
 // Placeholder / legacy commands
 // ---------------------------------------------------------------------------
@@ -342,6 +457,7 @@ pub fn run() {
             sidecar_restart,
             sidecar_send_message,
             sidecar_cancel,
+            sidecar_set_mcp_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
