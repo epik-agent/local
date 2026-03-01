@@ -168,7 +168,10 @@ fn spawn_sidecar(app: &AppHandle) -> Result<CommandChild, String> {
                                     .to_string();
                                 let _ = app_handle.emit(
                                     "sidecar://error",
-                                    ErrorPayload { request_id, message },
+                                    ErrorPayload {
+                                        request_id,
+                                        message,
+                                    },
                                 );
                             }
                             _ => {}
@@ -181,13 +184,12 @@ fn spawn_sidecar(app: &AppHandle) -> Result<CommandChild, String> {
                 }
                 CommandEvent::Error(err) => {
                     eprintln!("[sidecar error] {err}");
-                    let _ = app_handle
-                        .emit("sidecar://status", StatusPayload { status: "error" });
+                    let _ = app_handle.emit("sidecar://status", StatusPayload { status: "error" });
                 }
                 CommandEvent::Terminated(status) => {
                     eprintln!("[sidecar] terminated: {status:?}");
-                    let _ = app_handle
-                        .emit("sidecar://status", StatusPayload { status: "stopped" });
+                    let _ =
+                        app_handle.emit("sidecar://status", StatusPayload { status: "stopped" });
                 }
                 _ => {}
             }
@@ -206,10 +208,7 @@ fn spawn_sidecar(app: &AppHandle) -> Result<CommandChild, String> {
 /// Emits ``sidecar://status`` with ``"starting"`` immediately, then the sidecar
 /// forwards its own ``"ready"`` event once it has initialised.
 #[tauri::command]
-async fn sidecar_start(
-    app: AppHandle,
-    state: State<'_, SidecarState>,
-) -> Result<(), String> {
+async fn sidecar_start(app: AppHandle, state: State<'_, SidecarState>) -> Result<(), String> {
     let _ = app.emit("sidecar://status", StatusPayload { status: "starting" });
 
     let child = spawn_sidecar(&app)?;
@@ -224,10 +223,7 @@ async fn sidecar_start(
 ///
 /// Sends a graceful ``shutdown`` message then kills the process.
 #[tauri::command]
-async fn sidecar_stop(
-    app: AppHandle,
-    state: State<'_, SidecarState>,
-) -> Result<(), String> {
+async fn sidecar_stop(app: AppHandle, state: State<'_, SidecarState>) -> Result<(), String> {
     let mut guard = state.0.lock().map_err(|e| e.to_string())?;
 
     if let Some(mut child) = guard.take() {
@@ -243,10 +239,7 @@ async fn sidecar_stop(
 
 /// Restart the sidecar process (stop then start).
 #[tauri::command]
-async fn sidecar_restart(
-    app: AppHandle,
-    state: State<'_, SidecarState>,
-) -> Result<(), String> {
+async fn sidecar_restart(app: AppHandle, state: State<'_, SidecarState>) -> Result<(), String> {
     // Stop existing process if any
     {
         let mut guard = state.0.lock().map_err(|e| e.to_string())?;
