@@ -17,15 +17,25 @@ inputs:
     description: Directory that contains Cargo.toml
     required: false
     default: src-tauri
+  use-sccache:
+    description: Enable sccache for Rust compilation
+    required: false
+    default: "true"
 
 runs:
   using: composite
   steps:
+    - name: Install sccache
+      if: inputs.use-sccache == 'true'
+      uses: mozilla-actions/sccache-action@v0.0.5
+
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ inputs.toolchain }}
         components: ${{ inputs.components }}
+      env:
+        RUSTC_WRAPPER: ${{ inputs.use-sccache == 'true' && 'sccache' || '' }}
 
     - name: Restore Cargo cache
       uses: actions/cache@v4
@@ -38,4 +48,5 @@ runs:
           ${{ inputs.working-directory }}/target/
         key: ${{ runner.os }}-cargo-${{ hashFiles(format('{0}/Cargo.lock', inputs.working-directory)) }}
         restore-keys: |
+          ${{ runner.os }}-cargo-${{ hashFiles(format('{0}/Cargo.toml', inputs.working-directory)) }}
           ${{ runner.os }}-cargo-
