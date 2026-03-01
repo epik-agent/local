@@ -8,7 +8,7 @@
  */
 
 const isTauri = (): boolean =>
-  "__TAURI_INTERNALS__" in (window as Record<string, unknown>);
+  "__TAURI_INTERNALS__" in (window as unknown as Record<string, unknown>);
 
 type InvokeResponse = boolean | string | null | undefined | Record<string, unknown> | unknown[];
 

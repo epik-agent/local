@@ -7,7 +7,7 @@
  */
 
 const isTauri = (): boolean =>
-  "__TAURI_INTERNALS__" in (window as Record<string, unknown>);
+  "__TAURI_INTERNALS__" in (window as unknown as Record<string, unknown>);
 
 type EventCallback<T> = (event: { payload: T }) => void;
 type UnlistenFn = () => void;
