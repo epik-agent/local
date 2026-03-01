@@ -29,19 +29,20 @@ const MOCK_RESPONSES: Record<string, InvokeResponse> = {
 export async function invoke<T>(cmd: string, _args?: Record<string, unknown>): Promise<T> {
   if (isTauri()) {
     const { invoke: tauriInvoke } = await import("@tauri-apps/api/core");
-    return tauriInvoke<T>(cmd, _args);
+    return await tauriInvoke<T>(cmd, _args);
   }
 
   // Dynamic override — installed by Playwright addInitScript per test
   const dynFn = (window as unknown as Record<string, unknown>).__TAURI_INVOKE__ as
     | ((cmd: string, args: unknown) => Promise<T>)
     | undefined;
-  if (dynFn !== undefined) return dynFn(cmd, _args);
+  if (dynFn !== undefined) return await dynFn(cmd, _args);
 
   if (Object.prototype.hasOwnProperty.call(MOCK_RESPONSES, cmd)) {
     return MOCK_RESPONSES[cmd] as T;
   }
 
-  console.warn(`[tauri-shim] Unknown command "${cmd}" — returning undefined`);
+  // Unknown command — shim returns undefined for unknown commands in non-Tauri environments
+  void cmd;
   return undefined as T;
 }

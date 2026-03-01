@@ -226,7 +226,7 @@ describe("build-tauri composite action", () => {
   it("installs Linux system dependencies on Linux runners", () => {
     const action = loadAction("build-tauri/action.yml");
     const steps = action.runs?.steps ?? [];
-    const linuxStep = steps.find((s) => s.if !== undefined && s.if.includes("Linux"));
+    const linuxStep = steps.find((s) => s.if?.includes("Linux") ?? false);
     expect(linuxStep).toBeDefined();
     expect(linuxStep?.with?.packages).toContain("libwebkit2gtk");
   });

@@ -7,12 +7,12 @@ async function installMocks(page: Page): Promise<void> {
 
     const listeners: Record<string, Array<(e: { payload: unknown }) => void>> = {};
 
-    (window as unknown as Record<string, unknown>).__TAURI_LISTEN__ = (
+    (window as unknown as Record<string, unknown>).__TAURI_LISTEN__ = async (
       event: string,
       handler: (e: { payload: unknown }) => void,
     ): Promise<() => void> => {
       (listeners[event] ??= []).push(handler);
-      return Promise.resolve(() => undefined);
+      return () => undefined;
     };
 
     (window as unknown as Record<string, unknown>).__TAURI_INVOKE__ = async (
