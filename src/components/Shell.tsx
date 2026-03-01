@@ -7,6 +7,7 @@ import { NetworkBanner } from "./NetworkBanner";
 import { SetupWizard } from "./SetupWizard";
 import { ThemeToggle } from "./ThemeToggle";
 import { WaveSidebar } from "./WaveSidebar";
+import { useResizeHandle } from "../hooks/useResizeHandle";
 import { useSetup } from "../hooks/useSetup";
 import { useSidecar } from "../hooks/useSidecar";
 
@@ -28,6 +29,18 @@ export function Shell(): React.ReactElement {
   const { step, status, retry, completeSetup } = useSetup();
   const [showAuthError, setShowAuthError] = useState(false);
   const { status: sidecarStatus, error: sidecarError, start } = useSidecar();
+
+  const {
+    size: chatWidth,
+    isDragging: isSplitDragging,
+    onMouseDown: handleSplitDragStart,
+  } = useResizeHandle({
+    defaultSize: 600,
+    minSize: 300,
+    maxSize: 900,
+    axis: "horizontal",
+    direction: "positive",
+  });
 
   useEffect(() => {
     if (step === "ready") {
@@ -88,7 +101,16 @@ export function Shell(): React.ReactElement {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Primary content — Chat + Wave sidebar */}
         <main className="flex flex-1 overflow-hidden" data-testid="main-content">
-          <ChatView sidecarStatus={sidecarStatus} sidecarError={sidecarError} />
+          <ChatView sidecarStatus={sidecarStatus} sidecarError={sidecarError} width={chatWidth} />
+          {/* Split handle */}
+          <div
+            data-testid="chat-wave-split-handle"
+            onMouseDown={handleSplitDragStart}
+            className="flex w-1 shrink-0 cursor-col-resize items-center justify-center transition-colors"
+            style={{ backgroundColor: isSplitDragging ? "var(--border-strong)" : "var(--border)" }}
+            role="separator"
+            aria-label="Resize chat / waves split"
+          />
           <WaveSidebar />
         </main>
 

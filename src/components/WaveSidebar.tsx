@@ -262,17 +262,6 @@ export function WaveSidebar({
         transition: isDragging ? "none" : "width 0.2s ease, min-width 0.2s ease",
       }}
     >
-      {/* Left-edge resize handle */}
-      {isOpen && (
-        <div
-          data-testid="wave-sidebar-resize-handle"
-          onMouseDown={handleDragStart}
-          className="flex w-1 shrink-0 cursor-col-resize items-center justify-center transition-colors"
-          style={{ backgroundColor: isDragging ? "var(--border-strong)" : "var(--border)" }}
-          role="separator"
-          aria-label="Resize wave sidebar"
-        />
-      )}
       <aside
         className="flex flex-1 flex-col overflow-hidden"
         style={{
@@ -359,6 +348,17 @@ export function WaveSidebar({
           </div>
         )}
       </aside>
+      {/* Right-edge resize handle */}
+      {isOpen && (
+        <div
+          data-testid="wave-sidebar-resize-handle"
+          onMouseDown={handleDragStart}
+          className="flex w-1 shrink-0 cursor-col-resize items-center justify-center transition-colors"
+          style={{ backgroundColor: isDragging ? "var(--border-strong)" : "var(--border)" }}
+          role="separator"
+          aria-label="Resize wave sidebar"
+        />
+      )}
     </div>
   );
 }

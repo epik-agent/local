@@ -8,6 +8,7 @@ import type { SidecarStatus } from "../lib/sidecar";
 interface ChatViewProps {
   sidecarStatus?: SidecarStatus;
   sidecarError?: string | null;
+  width?: number;
 }
 
 /**
@@ -24,6 +25,7 @@ interface ChatViewProps {
 export function ChatView({
   sidecarStatus = "ready",
   sidecarError = null,
+  width,
 }: ChatViewProps = {}): React.ReactElement {
   const {
     conversations,
@@ -91,7 +93,15 @@ export function ChatView({
   const isLastMessageStreaming = streaming && lastMessage?.role === "assistant";
 
   return (
-    <div className="flex h-full" data-testid="chat-view">
+    <div
+      className="flex h-full"
+      style={
+        width !== undefined
+          ? { width: `${String(width)}px`, minWidth: `${String(width)}px`, flexShrink: 0 }
+          : { flex: 1, minWidth: 0 }
+      }
+      data-testid="chat-view"
+    >
       {/* Conversation sidebar + resize handle */}
       <div
         className="flex shrink-0"
