@@ -1,0 +1,54 @@
+name: Preview
+
+# Build a Linux binary on every branch push / pull-request so reviewers can
+# download and run the app to inspect the current state of the UI.
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint / type-check — reuse the same checks as ci.yml (no duplication)
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js + pnpm
+        uses: ./.github/actions/setup-node
+
+      - name: Check formatting (Prettier)
+        run: pnpm format:check
+
+      - name: Lint (ESLint — all warnings are errors)
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Run tests
+        run: pnpm test
+
+  # ---------------------------------------------------------------------------
+  # Preview build — Linux binary uploaded as a workflow artifact
+  # ---------------------------------------------------------------------------
+  build-linux:
+    name: Preview build (Linux)
+    needs: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Tauri app (Linux preview)
+        uses: ./.github/actions/build-tauri
+        with:
+          artifact-name: preview-linux-${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

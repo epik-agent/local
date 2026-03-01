@@ -1,0 +1,56 @@
+name: Build Tauri app
+description: >
+  Installs system dependencies for the target platform, sets up Node.js, pnpm,
+  and the Rust toolchain, then runs tauri-apps/tauri-action to produce
+  platform-native binaries. Reusable across epik-agent repositories.
+
+  TODO: Add code-signing inputs (certificate, password, Apple ID, etc.) and
+  pass them to tauri-action once signing is in scope.
+
+inputs:
+  args:
+    description: Extra arguments forwarded to tauri-action (e.g. --target aarch64-apple-darwin)
+    required: false
+    default: ""
+  upload-artifacts:
+    description: Whether to upload built bundles as GitHub Actions artifacts
+    required: false
+    default: "true"
+  artifact-name:
+    description: Name for the uploaded artifact
+    required: false
+    default: tauri-bundle-${{ runner.os }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install system dependencies (Linux / Tauri)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libwebkit2gtk-4.1-dev \
+          build-essential \
+          curl \
+          wget \
+          file \
+          libxdo-dev \
+          libssl-dev \
+          libayatana-appindicator3-dev \
+          librsvg2-dev
+
+    - name: Setup Node.js + pnpm
+      uses: ./.github/actions/setup-node
+
+    - name: Setup Rust toolchain
+      uses: ./.github/actions/setup-rust
+      with:
+        components: ""
+
+    - name: Build Tauri app
+      uses: tauri-apps/tauri-action@v0
+      with:
+        args: ${{ inputs.args }}
+        uploadArtifacts: ${{ inputs.upload-artifacts }}
+        artifactName: ${{ inputs.artifact-name }}
