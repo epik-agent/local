@@ -19,11 +19,11 @@ function makeLocalStorageMock(): Storage {
       store[key] = value;
     },
     removeItem: (key: string) => {
-      delete store[key];
+      Reflect.deleteProperty(store, key);
     },
     clear: () => {
       for (const key of Object.keys(store)) {
-        delete store[key];
+        Reflect.deleteProperty(store, key);
       }
     },
     key: (index: number) => Object.keys(store)[index] ?? null,
@@ -36,4 +36,21 @@ function makeLocalStorageMock(): Storage {
 Object.defineProperty(window, "localStorage", {
   value: makeLocalStorageMock(),
   writable: true,
+});
+
+// jsdom does not implement window.matchMedia. Provide a minimal stub so
+// components that call it (e.g. useTheme) don't throw in tests.
+// Individual tests that care about the return value should override this via
+// vi.stubGlobal("matchMedia", ...) in their own beforeEach block.
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: (query: string): MediaQueryList =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList,
 });

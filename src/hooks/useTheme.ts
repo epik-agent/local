@@ -20,10 +20,8 @@ function resolveInitialTheme(): Theme {
     return stored;
   }
 
-  if (typeof window !== "undefined" && window.matchMedia) {
-    if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-      return "light";
-    }
+  if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+    return "light";
   }
 
   return "dark";
