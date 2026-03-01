@@ -59,6 +59,10 @@ test("chat responds to a user message", async ({ page }) => {
   await page.getByTestId("message-input").fill("I want to fix all the bugs");
   await page.getByTestId("send-button").click();
 
-  await expect(page.getByTestId("message-list").getByText("I want to fix all the bugs")).toBeVisible();
-  await expect(page.getByTestId("message-list").getByText("Hello world!")).toBeVisible({ timeout: 5_000 });
+  await expect(
+    page.getByTestId("message-list").getByText("I want to fix all the bugs"),
+  ).toBeVisible();
+  await expect(page.getByTestId("message-list").getByText("Hello world!")).toBeVisible({
+    timeout: 5_000,
+  });
 });
