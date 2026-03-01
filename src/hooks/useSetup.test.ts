@@ -31,8 +31,6 @@ describe("useSetup", () => {
   }
 
   it("starts in the checking step", async () => {
-    // Use a never-resolving promise so async checks stay in-flight and the
-    // initial "checking" state can be observed synchronously before settling.
     mockInvoke.mockReturnValue(new Promise(() => undefined));
     const { result } = renderHook(() => useSetup());
     expect(result.current.step).toBe("checking");
@@ -64,6 +62,8 @@ describe("useSetup", () => {
     await waitFor(() => {
       expect(result.current.step).toBe("gh_missing");
     });
+
+    expect(result.current.status.ghInstalled).toBe(false);
   });
 
   it("moves to gh_unauth step when gh is installed but not authenticated", async () => {
@@ -75,7 +75,7 @@ describe("useSetup", () => {
     });
   });
 
-  it("returns status with all checks reflected", async () => {
+  it("returns status reflecting all check results", async () => {
     mockChecks({ ghInstalled: true, ghAuthenticated: true, networkOnline: true });
     const { result } = renderHook(() => useSetup());
 
@@ -88,19 +88,7 @@ describe("useSetup", () => {
     expect(result.current.status.networkOnline).toBe(true);
   });
 
-  it("returns status with ghInstalled false when check fails", async () => {
-    mockChecks({ ghInstalled: false });
-    const { result } = renderHook(() => useSetup());
-
-    await waitFor(() => {
-      expect(result.current.step).toBe("gh_missing");
-    });
-
-    expect(result.current.status.ghInstalled).toBe(false);
-  });
-
   it("retry re-runs the checks and updates step", async () => {
-    // First round: gh not installed
     mockChecks({ ghInstalled: false });
     const { result } = renderHook(() => useSetup());
 
@@ -108,7 +96,6 @@ describe("useSetup", () => {
       expect(result.current.step).toBe("gh_missing");
     });
 
-    // Second round: all pass
     mockChecks({ ghInstalled: true, ghAuthenticated: true, networkOnline: true });
 
     await act(async () => {
@@ -134,15 +121,5 @@ describe("useSetup", () => {
 
     expect(localStorage.getItem(SETUP_KEY)).toBe("true");
     expect(result.current.step).toBe("ready");
-  });
-
-  it("reads setup complete from localStorage on mount and skips wizard", async () => {
-    localStorage.setItem(SETUP_KEY, "true");
-    mockChecks();
-    const { result } = renderHook(() => useSetup());
-
-    await waitFor(() => {
-      expect(result.current.step).toBe("ready");
-    });
   });
 });

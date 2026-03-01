@@ -8,48 +8,18 @@ import type { CompletePayload, TokenPayload } from "../lib/sidecar";
 const mockInvoke = vi.mocked(invoke);
 const mockListen = vi.mocked(listen);
 
-function makeStore(): Storage {
-  const store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => {
-      store[key] = value;
-    },
-    removeItem: (key: string) => {
-      Reflect.deleteProperty(store, key);
-    },
-    clear: () => {
-      for (const key of Object.keys(store)) {
-        Reflect.deleteProperty(store, key);
-      }
-    },
-    key: (index: number) => Object.keys(store)[index] ?? null,
-    get length() {
-      return Object.keys(store).length;
-    },
-  };
-}
-
 describe("useChat", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", makeStore());
+    localStorage.clear();
     mockInvoke.mockReset();
     mockListen.mockReset();
     mockListen.mockResolvedValue(() => undefined);
   });
 
-  it("initialises with null active conversation", () => {
+  it("initialises with no conversations, no active conversation, and streaming false", () => {
     const { result } = renderHook(() => useChat());
     expect(result.current.activeConversation).toBeNull();
-  });
-
-  it("initialises with empty conversations list", () => {
-    const { result } = renderHook(() => useChat());
     expect(result.current.conversations).toEqual([]);
-  });
-
-  it("initialises with streaming false", () => {
-    const { result } = renderHook(() => useChat());
     expect(result.current.streaming).toBe(false);
   });
 

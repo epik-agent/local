@@ -1,35 +1,23 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useSidecar } from "./useSidecar";
 import type { StatusPayload } from "../lib/sidecar";
 
 const mockInvoke = vi.mocked(invoke);
-
-// Mock @tauri-apps/api/event for listen/unlisten
-vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(),
-}));
-
-import { listen } from "@tauri-apps/api/event";
-
 const mockListen = vi.mocked(listen);
 
 describe("useSidecar", () => {
   beforeEach(() => {
     mockInvoke.mockReset();
     mockListen.mockReset();
-    // Default: listen returns an unlisten function
     mockListen.mockResolvedValue(() => undefined);
   });
 
-  it("initialises with stopped status", () => {
+  it("initialises with stopped status and null error", () => {
     const { result } = renderHook(() => useSidecar());
     expect(result.current.status).toBe("stopped");
-  });
-
-  it("initialises with null error", () => {
-    const { result } = renderHook(() => useSidecar());
     expect(result.current.error).toBeNull();
   });
 
@@ -65,7 +53,7 @@ describe("useSidecar", () => {
     });
   });
 
-  it("calls sidecar_stop command when stop is invoked", async () => {
+  it("calls sidecar_stop command and sets status to stopped", async () => {
     mockInvoke.mockResolvedValueOnce(undefined);
     const { result } = renderHook(() => useSidecar());
 
@@ -74,16 +62,6 @@ describe("useSidecar", () => {
     });
 
     expect(mockInvoke).toHaveBeenCalledWith("sidecar_stop");
-  });
-
-  it("sets status to stopped after stop resolves", async () => {
-    mockInvoke.mockResolvedValueOnce(undefined);
-    const { result } = renderHook(() => useSidecar());
-
-    await act(async () => {
-      await result.current.stop();
-    });
-
     expect(result.current.status).toBe("stopped");
   });
 
@@ -98,7 +76,7 @@ describe("useSidecar", () => {
     expect(mockInvoke).toHaveBeenCalledWith("sidecar_restart");
   });
 
-  it("sets error when start command fails", async () => {
+  it("sets error and status to error when start command fails", async () => {
     mockInvoke.mockRejectedValueOnce(new Error("sidecar launch failed"));
     const { result } = renderHook(() => useSidecar());
 
@@ -110,53 +88,33 @@ describe("useSidecar", () => {
     expect(result.current.status).toBe("error");
   });
 
-  it("updates status from sidecar://status events", async () => {
+  it("updates status from sidecar://status events and unlistens on unmount", async () => {
     mockInvoke.mockResolvedValueOnce(undefined);
+    const unlisten = vi.fn();
 
     let statusCallback!: (event: { payload: StatusPayload }) => void;
     mockListen.mockImplementation(async (channel, cb) => {
       if (channel === "sidecar://status") {
         statusCallback = cb as (event: { payload: StatusPayload }) => void;
       }
-      return () => undefined;
+      return unlisten;
     });
 
-    const { result } = renderHook(() => useSidecar());
+    const { result, unmount } = renderHook(() => useSidecar());
 
     await act(async () => {
       await result.current.start();
     });
+
+    expect(mockListen).toHaveBeenCalledWith("sidecar://status", expect.any(Function));
 
     act(() => {
       statusCallback({ payload: { status: "ready" } });
     });
 
     expect(result.current.status).toBe("ready");
-  });
-
-  it("listens for sidecar://status events on mount", async () => {
-    renderHook(() => useSidecar());
-
-    // Wait for the effect to run
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(mockListen).toHaveBeenCalledWith("sidecar://status", expect.any(Function));
-  });
-
-  it("calls unlisten on unmount", async () => {
-    const unlisten = vi.fn();
-    mockListen.mockResolvedValue(unlisten);
-
-    const { unmount } = renderHook(() => useSidecar());
-
-    await act(async () => {
-      await Promise.resolve();
-    });
 
     unmount();
-
     expect(unlisten).toHaveBeenCalled();
   });
 });

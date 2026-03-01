@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ThemeToggle } from "./ThemeToggle";
 
-// Mock useTheme so we can control it in tests
 const mockToggleTheme = vi.fn();
 let mockTheme = "dark";
 
@@ -24,23 +23,22 @@ describe("ThemeToggle", () => {
     vi.clearAllMocks();
   });
 
-  it("renders a button", () => {
+  it("renders the toggle button with data-testid", () => {
     render(<ThemeToggle />);
+    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
 
-  it("has an accessible label for dark mode", () => {
+  it("has accessible label reflecting current theme", () => {
     mockTheme = "dark";
     render(<ThemeToggle />);
-    const button = screen.getByRole("button");
-    expect(button).toHaveAttribute("aria-label", "Switch to light mode");
+    expect(screen.getByRole("button")).toHaveAttribute("aria-label", "Switch to light mode");
   });
 
-  it("has an accessible label for light mode", () => {
+  it("updates accessible label when in light mode", () => {
     mockTheme = "light";
     render(<ThemeToggle />);
-    const button = screen.getByRole("button");
-    expect(button).toHaveAttribute("aria-label", "Switch to dark mode");
+    expect(screen.getByRole("button")).toHaveAttribute("aria-label", "Switch to dark mode");
   });
 
   it("calls toggleTheme when clicked", async () => {
@@ -50,20 +48,8 @@ describe("ThemeToggle", () => {
     expect(mockToggleTheme).toHaveBeenCalledOnce();
   });
 
-  it("renders a sun icon when in dark mode (switch to light)", () => {
-    mockTheme = "dark";
+  it("renders a theme icon", () => {
     render(<ThemeToggle />);
     expect(screen.getByTestId("theme-toggle-icon")).toBeInTheDocument();
-  });
-
-  it("renders a moon icon when in light mode (switch to dark)", () => {
-    mockTheme = "light";
-    render(<ThemeToggle />);
-    expect(screen.getByTestId("theme-toggle-icon")).toBeInTheDocument();
-  });
-
-  it("has data-testid attribute", () => {
-    render(<ThemeToggle />);
-    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
   });
 });
