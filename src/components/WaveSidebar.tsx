@@ -241,7 +241,7 @@ export function WaveSidebar({
     minSize: 180,
     maxSize: 480,
     axis: "horizontal",
-    direction: "negative",
+    direction: "positive",
   });
 
   const boardUrl =
