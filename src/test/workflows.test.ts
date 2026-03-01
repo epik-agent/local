@@ -111,10 +111,6 @@ function stepUses(steps: WorkflowStep[]): string[] {
   return steps.flatMap((s) => (s.uses !== undefined ? [s.uses] : []));
 }
 
-function stepRuns(steps: WorkflowStep[]): string[] {
-  return steps.flatMap((s) => (s.run !== undefined ? [s.run] : []));
-}
-
 function toArray(value: string | string[] | undefined): string[] {
   if (value === undefined) return [];
   return Array.isArray(value) ? value : [value];
