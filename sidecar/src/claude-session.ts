@@ -74,7 +74,10 @@ export async function streamClaudeResponse(
     signal.addEventListener("abort", () => abortController.abort());
   }
 
-  const sdkMcpServers: Record<string, { type: "stdio"; command: string; args?: string[]; env?: Record<string, string> }> = {};
+  const sdkMcpServers: Record<
+    string,
+    { type: "stdio"; command: string; args?: string[]; env?: Record<string, string> }
+  > = {};
   for (const srv of mcpServers) {
     sdkMcpServers[srv.name] = {
       type: "stdio",
