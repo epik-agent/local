@@ -19,7 +19,7 @@
  */
 
 import { execSync } from "node:child_process";
-import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { platform, arch } from "node:os";
 
@@ -63,7 +63,8 @@ if (process.env["EPIK_SIDECAR_DEV"] === "1") {
   // This avoids the need for pkg/SEA tooling in CI.
   console.log("Dev mode: writing shell-script wrapper...");
   const wrapper = `#!/usr/bin/env sh\nexec node "${BUNDLE_FILE}" "$@"\n`;
-  writeFileSync(outPath, wrapper, { mode: 0o755 });
+  writeFileSync(outPath, wrapper);
+  chmodSync(outPath, 0o755);
   console.log(`Wrote wrapper: ${outPath}`);
 } else {
   // Production: use Node SEA (Node.js ≥ 21) to compile a real binary.
