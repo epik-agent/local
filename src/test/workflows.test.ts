@@ -48,6 +48,9 @@ interface WorkflowOn {
     tags?: string[];
   };
   pull_request?: Record<string, unknown>;
+  workflow_dispatch?: {
+    inputs?: Record<string, { description?: string; required?: boolean }>;
+  };
 }
 
 interface Workflow {
@@ -108,10 +111,6 @@ function stepUses(steps: WorkflowStep[]): string[] {
   return steps.flatMap((s) => (s.uses !== undefined ? [s.uses] : []));
 }
 
-function stepRuns(steps: WorkflowStep[]): string[] {
-  return steps.flatMap((s) => (s.run !== undefined ? [s.run] : []));
-}
-
 function toArray(value: string | string[] | undefined): string[] {
   if (value === undefined) return [];
   return Array.isArray(value) ? value : [value];
@@ -158,20 +157,17 @@ describe("ci.yml", () => {
 // ---------------------------------------------------------------------------
 
 describe("release.yml", () => {
-  it("triggers on push to main", () => {
+  it("triggers only on workflow_dispatch", () => {
     const wf = loadWorkflow("release.yml");
-    expect(wf.on?.push?.branches).toContain("main");
+    expect(wf.on?.workflow_dispatch).toBeDefined();
+    expect(wf.on?.push).toBeUndefined();
+    expect(wf.on?.pull_request).toBeUndefined();
   });
 
-  it("triggers on semver tag push", () => {
+  it("workflow_dispatch requires a tag input", () => {
     const wf = loadWorkflow("release.yml");
-    const tags = wf.on?.push?.tags ?? [];
-    expect(tags.some((t) => t.startsWith("v"))).toBe(true);
-  });
-
-  it("has a frontend checks job", () => {
-    const wf = loadWorkflow("release.yml");
-    expect(jobNames(wf)).toContain("frontend");
+    expect(wf.on?.workflow_dispatch?.inputs).toHaveProperty("tag");
+    expect(wf.on?.workflow_dispatch?.inputs?.["tag"]?.required).toBe(true);
   });
 
   it("has a build job", () => {
@@ -182,6 +178,11 @@ describe("release.yml", () => {
   it("has a publish job", () => {
     const wf = loadWorkflow("release.yml");
     expect(jobNames(wf)).toContain("publish");
+  });
+
+  it("has no frontend checks job (ci.yml handles that)", () => {
+    const wf = loadWorkflow("release.yml");
+    expect(jobNames(wf)).not.toContain("frontend");
   });
 
   it("build job covers linux, macos, and windows platforms", () => {
@@ -199,12 +200,6 @@ describe("release.yml", () => {
     expect(uses.some((u) => u.includes("build-tauri"))).toBe(true);
   });
 
-  it("build job depends on frontend job", () => {
-    const wf = loadWorkflow("release.yml");
-    const needs = toArray(wf.jobs?.["build"]?.needs);
-    expect(needs).toContain("frontend");
-  });
-
   it("publish job depends on build job", () => {
     const wf = loadWorkflow("release.yml");
     const needs = toArray(wf.jobs?.["publish"]?.needs);
@@ -215,18 +210,6 @@ describe("release.yml", () => {
     const wf = loadWorkflow("release.yml");
     const uses = stepUses(stepsOf(wf, "publish"));
     expect(uses.some((u) => u.includes("action-gh-release"))).toBe(true);
-  });
-
-  it("frontend job runs lint", () => {
-    const wf = loadWorkflow("release.yml");
-    const runs = stepRuns(stepsOf(wf, "frontend"));
-    expect(runs.some((r) => r.includes("pnpm lint"))).toBe(true);
-  });
-
-  it("frontend job runs tests", () => {
-    const wf = loadWorkflow("release.yml");
-    const runs = stepRuns(stepsOf(wf, "frontend"));
-    expect(runs.some((r) => r.includes("pnpm test"))).toBe(true);
   });
 });
 
