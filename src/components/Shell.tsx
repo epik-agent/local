@@ -1,11 +1,13 @@
 import { Logo } from "./Logo";
+import { ThemeToggle } from "./ThemeToggle";
 
 /**
  * Main application shell — the branded empty canvas.
  *
  * Renders the top-level layout with the Epik brand: dark background, Geist font,
  * and the mint accent colour in the placeholder heading. This component provides
- * the structural container for the application content.
+ * the structural container for the application content, including the persistent
+ * theme toggle button in the title bar.
  */
 export function Shell(): React.ReactElement {
   return (
@@ -27,6 +29,9 @@ export function Shell(): React.ReactElement {
         <span className="text-sm font-semibold tracking-wide" style={{ color: "var(--text)" }}>
           Epik
         </span>
+        <div className="ml-auto">
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Main content */}

@@ -48,29 +48,78 @@
   --brand-dark-border-default: #1f1f1f;
   --brand-dark-border-strong: #333333;
 
-  /* Aliases for convenience */
+  /* Semantic aliases */
   --bg: var(--brand-dark-bg-root);
   --bg-surface: var(--brand-dark-bg-surface);
   --bg-raised: var(--brand-dark-bg-raised);
+  --bg-input: var(--brand-dark-bg-input);
+  --bg-bar: var(--brand-dark-bg-bar);
+  --bg-hover: var(--brand-dark-bg-hover);
+  --bg-active: var(--brand-dark-bg-active);
+  --bg-overlay: var(--brand-dark-bg-overlay);
+
   --text: var(--brand-dark-text-primary);
+  --text-secondary: var(--brand-dark-text-secondary);
   --text-muted: var(--brand-dark-text-muted);
+  --text-faint: var(--brand-dark-text-faint);
+  --text-inverse: var(--brand-dark-text-inverse);
+
   --accent: var(--brand-dark-accent-base);
   --accent-hover: var(--brand-dark-accent-hover);
   --accent-muted: var(--brand-dark-accent-muted);
+  --accent-on-accent: var(--brand-dark-accent-onAccent);
+
   --border: var(--brand-dark-border-default);
+  --border-strong: var(--brand-dark-border-strong);
+
+  /* GitHub-style status colours — dark-mode */
+  --color-status-done: #3fb950;
+  --color-status-in-progress: #a371f7;
+  --color-status-todo: #58a6ff;
+
+  /* Semantic colours */
+  --color-success: var(--brand-dark-semantic-success);
+  --color-warning: var(--brand-dark-semantic-warning);
+  --color-error: var(--brand-dark-semantic-error);
+  --color-info: var(--brand-dark-semantic-info);
 }
 
 /* Light theme overrides */
-[data-theme="light"] {
+[data-theme="light"],
+html:not(.dark) {
   --bg: #fafafa;
   --bg-surface: #f0f0f0;
   --bg-raised: #e5e5e5;
+  --bg-input: #ffffff;
+  --bg-bar: #f5f5f5;
+  --bg-hover: #ebebeb;
+  --bg-active: #e0e0e0;
+  --bg-overlay: rgba(0, 0, 0, 0.3);
+
   --text: #0a0a0a;
+  --text-secondary: #404040;
   --text-muted: #737373;
+  --text-faint: #b0b0b0;
+  --text-inverse: #fafafa;
+
   --accent: #00b377;
   --accent-hover: #009966;
   --accent-muted: rgba(0, 179, 119, 0.1);
+  --accent-on-accent: #ffffff;
+
   --border: #e0e0e0;
+  --border-strong: #cccccc;
+
+  /* GitHub-style status colours — light-mode adjusted */
+  --color-status-done: #1a7f37;
+  --color-status-in-progress: #7c3aed;
+  --color-status-todo: #0969da;
+
+  /* Semantic colours */
+  --color-success: #1a7f37;
+  --color-warning: #9a6700;
+  --color-error: #cf222e;
+  --color-info: #0969da;
 }
 
 /* Base styles */
@@ -103,18 +152,45 @@ body {
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 
-  /* Brand color tokens as Tailwind theme extensions */
+  /* Semantic background tokens */
   --color-brand-bg: var(--bg);
   --color-brand-surface: var(--bg-surface);
   --color-brand-raised: var(--bg-raised);
+  --color-brand-input: var(--bg-input);
+  --color-brand-bar: var(--bg-bar);
+  --color-brand-hover: var(--bg-hover);
+  --color-brand-active: var(--bg-active);
+  --color-brand-overlay: var(--bg-overlay);
+
+  /* Semantic text tokens */
   --color-brand-text: var(--text);
+  --color-brand-text-secondary: var(--text-secondary);
   --color-brand-muted: var(--text-muted);
+  --color-brand-faint: var(--text-faint);
+  --color-brand-inverse: var(--text-inverse);
+
+  /* Semantic accent tokens */
   --color-brand-accent: var(--accent);
   --color-brand-accent-hover: var(--accent-hover);
   --color-brand-accent-muted: var(--accent-muted);
-  --color-brand-border: var(--border);
+  --color-brand-on-accent: var(--accent-on-accent);
 
-  /* Fixed accent for direct use */
+  /* Semantic border tokens */
+  --color-brand-border: var(--border);
+  --color-brand-border-strong: var(--border-strong);
+
+  /* GitHub-style status tokens */
+  --color-status-done: var(--color-status-done);
+  --color-status-in-progress: var(--color-status-in-progress);
+  --color-status-todo: var(--color-status-todo);
+
+  /* Feedback colours */
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-error: var(--color-error);
+  --color-info: var(--color-info);
+
+  /* Fixed mint accent for direct use */
   --color-mint: #00e599;
   --color-mint-hover: #33edb3;
   --color-mint-muted: rgba(0, 229, 153, 0.12);
