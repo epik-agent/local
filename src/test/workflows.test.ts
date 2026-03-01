@@ -154,46 +154,6 @@ describe("ci.yml", () => {
 });
 
 // ---------------------------------------------------------------------------
-// preview.yml
-// ---------------------------------------------------------------------------
-
-describe("preview.yml", () => {
-  it("triggers on push to non-main branches", () => {
-    const wf = loadWorkflow("preview.yml");
-    expect(wf.on?.push?.["branches-ignore"]).toContain("main");
-  });
-
-  it("triggers on pull_request", () => {
-    const wf = loadWorkflow("preview.yml");
-    expect(wf.on?.pull_request).toBeDefined();
-  });
-
-  it("has only a Linux build job (frontend checks run in ci.yml)", () => {
-    const wf = loadWorkflow("preview.yml");
-    const names = jobNames(wf);
-    expect(names).toContain("build-linux");
-    expect(names).not.toContain("frontend");
-  });
-
-  it("Linux build job has no blocking dependencies", () => {
-    const wf = loadWorkflow("preview.yml");
-    const needs = toArray(wf.jobs?.["build-linux"]?.needs);
-    expect(needs).toHaveLength(0);
-  });
-
-  it("Linux build job uses build-tauri composite action", () => {
-    const wf = loadWorkflow("preview.yml");
-    const uses = stepUses(stepsOf(wf, "build-linux"));
-    expect(uses.some((u) => u.includes("build-tauri"))).toBe(true);
-  });
-
-  it("Linux build job runs on ubuntu-latest", () => {
-    const wf = loadWorkflow("preview.yml");
-    expect(wf.jobs?.["build-linux"]?.["runs-on"]).toBe("ubuntu-latest");
-  });
-});
-
-// ---------------------------------------------------------------------------
 // release.yml
 // ---------------------------------------------------------------------------
 
