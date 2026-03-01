@@ -1,0 +1,117 @@
+name: Release
+
+# Build release-optimised binaries for all target platforms and attach them to
+# a GitHub Release.  Triggers on:
+#   - A semver tag push  (e.g. v1.2.3)  → standard release workflow
+#   - A push to main                    → creates a "latest" pre-release so
+#                                         every main commit has downloadable
+#                                         binaries without requiring a tag
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint / type-check — reuse the same checks as ci.yml (no duplication)
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js + pnpm
+        uses: ./.github/actions/setup-node
+
+      - name: Check formatting (Prettier)
+        run: pnpm format:check
+
+      - name: Lint (ESLint — all warnings are errors)
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Run tests
+        run: pnpm test
+
+  # ---------------------------------------------------------------------------
+  # Cross-platform release builds
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build (${{ matrix.os }})
+    needs: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+          - os: windows-latest
+            platform: windows
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Tauri app (${{ matrix.platform }})
+        uses: ./.github/actions/build-tauri
+        with:
+          # TODO: Add macOS universal binary support:
+          #   args: --target universal-apple-darwin
+          # That requires adding the aarch64-apple-darwin Rust target in the
+          # setup-rust composite action and macOS code-signing inputs here.
+          artifact-name: release-${{ matrix.platform }}-${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------------
+  # Publish GitHub Release
+  # ---------------------------------------------------------------------------
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Download all per-platform artifacts into one directory
+      - name: Download all release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*-${{ github.sha }}
+          merge-multiple: true
+          path: dist/bundles
+
+      - name: Determine release metadata
+        id: meta
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.tag == 'latest' && 'Latest (main)' || steps.meta.outputs.tag }}
+          prerelease: ${{ steps.meta.outputs.prerelease }}
+          files: dist/bundles/**
+          # TODO: Add release notes generation (e.g. via release-drafter) once
+          # a changelog / PR-labelling convention is established.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
