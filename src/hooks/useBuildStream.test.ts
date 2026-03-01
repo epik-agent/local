@@ -167,4 +167,65 @@ describe("useBuildStream", () => {
     expect(unlisten1).toHaveBeenCalled();
     expect(unlisten2).toHaveBeenCalled();
   });
+
+  it("uses session-scoped channel when sessionId is provided", async () => {
+    renderHook(() => useBuildStream("session-abc"));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const channels = mockListen.mock.calls.map((c) => c[0]);
+    expect(channels).toContain("sidecar://token/session-abc");
+    expect(channels).toContain("sidecar://complete/session-abc");
+  });
+
+  it("does not listen to global channel when sessionId is provided", async () => {
+    renderHook(() => useBuildStream("session-abc"));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const channels = mockListen.mock.calls.map((c) => c[0]);
+    expect(channels).not.toContain("sidecar://token");
+    expect(channels).not.toContain("sidecar://complete");
+  });
+
+  it("accumulates tokens from session-scoped channel", async () => {
+    const listeners: Record<string, (event: { payload: unknown }) => void> = {};
+    mockListen.mockImplementation(async (channel, cb) => {
+      listeners[channel as string] = cb as (event: { payload: unknown }) => void;
+      return () => undefined;
+    });
+
+    const { result } = renderHook(() => useBuildStream("session-xyz"));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      listeners["sidecar://token/session-xyz"]({
+        payload: { requestId: "req-1", token: "build output" } satisfies TokenPayload,
+      });
+    });
+
+    expect(result.current.lines).toEqual(["build output"]);
+    expect(result.current.isActive).toBe(true);
+  });
+
+  it("re-subscribes to new channels when sessionId changes", async () => {
+    const { rerender } = renderHook(({ sid }: { sid?: string }) => useBuildStream(sid), {
+      initialProps: { sid: "session-a" },
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    mockListen.mockClear();
+
+    rerender({ sid: "session-b" });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const channels = mockListen.mock.calls.map((c) => c[0]);
+    expect(channels).toContain("sidecar://token/session-b");
+    expect(channels).toContain("sidecar://complete/session-b");
+  });
 });

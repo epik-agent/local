@@ -1,14 +1,23 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BuildStreamPanel } from "./BuildStreamPanel";
+import type { BuildSession } from "../lib/build";
 
-// Mock useBuildStream
+// Mock useBuildStream — used inside the SessionStream sub-component
 vi.mock("../hooks/useBuildStream", () => ({
   useBuildStream: vi.fn(),
 }));
 
 import { useBuildStream } from "../hooks/useBuildStream";
 const mockUseBuildStream = vi.mocked(useBuildStream);
+
+const runningSession = (id: string, repo: string): BuildSession => ({
+  id,
+  org: "acme",
+  repo,
+  status: "running",
+  startedAt: new Date().toISOString(),
+});
 
 describe("BuildStreamPanel", () => {
   beforeEach(() => {
@@ -101,5 +110,59 @@ describe("BuildStreamPanel", () => {
     render(<BuildStreamPanel />);
     const log = screen.getByTestId("build-stream-log");
     expect(log).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Session tab bar tests
+  // ---------------------------------------------------------------------------
+
+  it("does not render a session tab bar when no sessions are provided", () => {
+    render(<BuildStreamPanel />);
+    expect(screen.queryByTestId("session-tab-bar")).not.toBeInTheDocument();
+  });
+
+  it("renders a session tab bar when sessions are provided", () => {
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(<BuildStreamPanel sessions={sessions} activeSessionId="s1" />);
+    expect(screen.getByTestId("session-tab-bar")).toBeInTheDocument();
+  });
+
+  it("renders a tab for each session", () => {
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(<BuildStreamPanel sessions={sessions} activeSessionId="s1" />);
+    expect(screen.getByTestId("session-tab-s1")).toBeInTheDocument();
+    expect(screen.getByTestId("session-tab-s2")).toBeInTheDocument();
+  });
+
+  it("marks the active session tab with data-active=true", () => {
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(<BuildStreamPanel sessions={sessions} activeSessionId="s2" />);
+    expect(screen.getByTestId("session-tab-s2")).toHaveAttribute("data-active", "true");
+    expect(screen.getByTestId("session-tab-s1")).toHaveAttribute("data-active", "false");
+  });
+
+  it("calls onSelectSession when a tab is clicked", () => {
+    const onSelectSession = vi.fn();
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(
+      <BuildStreamPanel
+        sessions={sessions}
+        activeSessionId="s1"
+        onSelectSession={onSelectSession}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("session-tab-s2"));
+    expect(onSelectSession).toHaveBeenCalledWith("s2");
+  });
+
+  it("passes the active session ID to useBuildStream", () => {
+    const sessions = [runningSession("s1", "api"), runningSession("s2", "dashboard")];
+    render(<BuildStreamPanel sessions={sessions} activeSessionId="s1" />);
+    expect(mockUseBuildStream).toHaveBeenCalledWith("s1");
+  });
+
+  it("passes undefined to useBuildStream when no sessions are provided", () => {
+    render(<BuildStreamPanel />);
+    expect(mockUseBuildStream).toHaveBeenCalledWith(undefined);
   });
 });
