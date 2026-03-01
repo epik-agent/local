@@ -22,10 +22,10 @@ export function Logo({ size = 32 }: { size?: number }): React.ReactElement {
       <line x1="8" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
       {/* Nodes */}
       {/* Brand accent nodes */}
-      <circle cx="5" cy="5" r="2.5" fill="var(--accent)" />
+      <circle cx="5" cy="5" r="2.5" fill="#00e599" />
       <circle cx="17" cy="8" r="2.0" fill="currentColor" />
       <circle cx="8" cy="17" r="2.0" fill="currentColor" />
-      <circle cx="14" cy="17" r="1.6" fill="var(--accent)" opacity="0.7" />
+      <circle cx="14" cy="17" r="1.6" fill="#00e599" opacity="0.7" />
     </svg>
   );
 }

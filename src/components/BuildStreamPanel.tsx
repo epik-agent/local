@@ -149,7 +149,11 @@ export function BuildStreamPanel({
   const [isOpen, setIsOpen] = useState(true);
   const logRef = useRef<HTMLDivElement | null>(null);
 
-  const { size: height, isDragging, onMouseDown: handleDragStart } = useResizeHandle({
+  const {
+    size: height,
+    isDragging,
+    onMouseDown: handleDragStart,
+  } = useResizeHandle({
     defaultSize: DEFAULT_HEIGHT,
     minSize: MIN_HEIGHT,
     maxSize: MAX_HEIGHT,
