@@ -662,6 +662,63 @@ async fn sidecar_list_builds(
 }
 
 // ---------------------------------------------------------------------------
+// Setup / environment check commands
+// ---------------------------------------------------------------------------
+
+/// Check whether the ``gh`` CLI is installed and reachable on the PATH.
+///
+/// Runs ``gh --version`` and returns ``true`` if the command exits with
+/// status 0, ``false`` otherwise.
+#[tauri::command]
+async fn check_gh_installed(app: AppHandle) -> bool {
+    app.shell()
+        .command("gh")
+        .args(["--version"])
+        .output()
+        .await
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+/// Check whether the ``gh`` CLI is authenticated with GitHub.
+///
+/// Runs ``gh auth status`` and returns ``true`` if the command exits with
+/// status 0 (authenticated), ``false`` otherwise.
+#[tauri::command]
+async fn check_gh_auth(app: AppHandle) -> bool {
+    app.shell()
+        .command("gh")
+        .args(["auth", "status"])
+        .output()
+        .await
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+/// Check whether the machine currently has a network connection.
+///
+/// Attempts a DNS resolution of ``github.com`` via ``curl`` (available on
+/// macOS and most Linux distros).  Returns ``true`` on success, ``false``
+/// otherwise.
+#[tauri::command]
+async fn check_network(app: AppHandle) -> bool {
+    app.shell()
+        .command("curl")
+        .args([
+            "-s",
+            "--max-time",
+            "3",
+            "-o",
+            "/dev/null",
+            "https://github.com",
+        ])
+        .output()
+        .await
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+// ---------------------------------------------------------------------------
 // Placeholder / legacy commands
 // ---------------------------------------------------------------------------
 
@@ -696,6 +753,9 @@ pub fn run() {
             sidecar_start_build,
             sidecar_stop_build,
             sidecar_list_builds,
+            check_gh_installed,
+            check_gh_auth,
+            check_network,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
