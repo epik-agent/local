@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -50,8 +50,10 @@ describe("Shell", () => {
     mockListen.mockResolvedValue(() => undefined);
   });
 
-  it("renders the application shell", () => {
-    render(<Shell />);
+  it("renders the application shell", async () => {
+    await act(async () => {
+      render(<Shell />);
+    });
     expect(screen.getByTestId("shell")).toBeInTheDocument();
   });
 
@@ -68,8 +70,10 @@ describe("Shell", () => {
     expect(screen.getByTestId("main-content")).toBeInTheDocument();
   });
 
-  it("applies brand background colour to the shell", () => {
-    render(<Shell />);
+  it("applies brand background colour to the shell", async () => {
+    await act(async () => {
+      render(<Shell />);
+    });
     const shell = screen.getByTestId("shell");
     expect(shell).toHaveStyle({ backgroundColor: "var(--bg)" });
   });
@@ -120,9 +124,11 @@ describe("Shell", () => {
     expect(screen.getByTestId("setup-wizard")).toBeInTheDocument();
   });
 
-  it("does not show the network banner when online", () => {
+  it("does not show the network banner when online", async () => {
     Object.defineProperty(window.navigator, "onLine", { configurable: true, get: () => true });
-    render(<Shell />);
+    await act(async () => {
+      render(<Shell />);
+    });
     expect(screen.queryByTestId("network-banner")).toBeNull();
   });
 });

@@ -73,6 +73,9 @@ describe("useWaveData", () => {
   });
 
   it("initialises with empty waves array", () => {
+    // Use a never-resolving promise so the fetch stays in-flight and the
+    // initial empty state can be observed synchronously before settling.
+    mockFetchWaves.mockReturnValue(new Promise(() => undefined));
     const { result } = renderHook(() => useWaveData());
     expect(result.current.waves).toEqual([]);
   });

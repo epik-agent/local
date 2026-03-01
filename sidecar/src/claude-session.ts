@@ -69,26 +69,31 @@ export async function streamClaudeResponse(
 
   // Build MCP server options if any servers are configured.
   const mcpServers = config?.mcpServers ?? [];
-  const queryOptions: Parameters<typeof query>[0] = {
-    prompt,
-    abortController: signal !== undefined ? { signal } : undefined,
-  };
+  const abortController = signal !== undefined ? new AbortController() : undefined;
+  if (signal !== undefined && abortController !== undefined) {
+    signal.addEventListener("abort", () => abortController.abort());
+  }
 
-  // Attach MCP servers if the SDK supports them.  The ``mcpServers`` option
-  // accepts a list of server definitions; we only add it when there is at
-  // least one server configured so we don't change SDK behaviour otherwise.
-  if (mcpServers.length > 0) {
-    // The Claude Code SDK accepts mcp_servers as a list of server configs.
-    // We type-cast through unknown here because the SDK typings may not expose
-    // this field yet; the runtime behaviour is what matters.
-    (queryOptions as Record<string, unknown>)["mcp_servers"] = mcpServers.map((srv) => ({
+  const sdkMcpServers: Record<
+    string,
+    { type: "stdio"; command: string; args?: string[]; env?: Record<string, string> }
+  > = {};
+  for (const srv of mcpServers) {
+    sdkMcpServers[srv.name] = {
       type: "stdio",
-      name: srv.name,
       command: srv.command,
       args: srv.args,
       env: srv.env,
-    }));
+    };
   }
+
+  const queryOptions: Parameters<typeof query>[0] = {
+    prompt,
+    options: {
+      abortController,
+      ...(mcpServers.length > 0 ? { mcpServers: sdkMcpServers } : {}),
+    },
+  };
 
   try {
     for await (const event of query(queryOptions)) {
@@ -121,29 +126,39 @@ export async function streamClaudeResponse(
         }
       }
 
-      // Emit tool_result events when a tool call returns.
-      if (event.type === "tool") {
-        const toolEvent = event as {
-          tool_use_id?: string;
-          content?: Array<{ type: string; text?: string }> | string;
-          is_error?: boolean;
-        };
-        const toolCallId = toolEvent.tool_use_id ?? "";
-        const resultText =
-          typeof toolEvent.content === "string"
-            ? toolEvent.content
-            : (toolEvent.content
-                ?.filter((c) => c.type === "text")
-                .map((c) => c.text ?? "")
-                .join("") ?? "");
+      // Emit tool_result events when a tool call returns (arrives as user message).
+      if (event.type === "user" && Array.isArray(event.message.content)) {
+        for (const block of event.message.content) {
+          if (
+            typeof block === "object" &&
+            block !== null &&
+            "type" in block &&
+            (block as { type: string }).type === "tool_result"
+          ) {
+            const toolResult = block as {
+              type: "tool_result";
+              tool_use_id?: string;
+              content?: Array<{ type: string; text?: string }> | string;
+              is_error?: boolean;
+            };
+            const toolCallId = toolResult.tool_use_id ?? "";
+            const resultText =
+              typeof toolResult.content === "string"
+                ? toolResult.content
+                : (toolResult.content
+                    ?.filter((c) => c.type === "text")
+                    .map((c) => c.text ?? "")
+                    .join("") ?? "");
 
-        callbacks.onToolResult?.({
-          type: "tool_result",
-          request_id: requestId,
-          tool_call_id: toolCallId,
-          result: resultText,
-          is_error: toolEvent.is_error === true,
-        });
+            callbacks.onToolResult?.({
+              type: "tool_result",
+              request_id: requestId,
+              tool_call_id: toolCallId,
+              result: resultText,
+              is_error: toolResult.is_error === true,
+            });
+          }
+        }
       }
     }
 

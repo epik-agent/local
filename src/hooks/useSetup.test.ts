@@ -30,8 +30,10 @@ describe("useSetup", () => {
     });
   }
 
-  it("starts in the checking step", () => {
-    mockChecks();
+  it("starts in the checking step", async () => {
+    // Use a never-resolving promise so async checks stay in-flight and the
+    // initial "checking" state can be observed synchronously before settling.
+    mockInvoke.mockReturnValue(new Promise(() => undefined));
     const { result } = renderHook(() => useSetup());
     expect(result.current.step).toBe("checking");
   });
