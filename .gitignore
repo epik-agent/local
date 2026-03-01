@@ -40,3 +40,4 @@ src-tauri/binaries/epik-sidecar-*
 !src-tauri/binaries/.gitkeep
 
 .claude/
+test-results/
