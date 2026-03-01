@@ -1,0 +1,38 @@
+name: Setup Node.js + pnpm
+description: >
+  Installs Node.js and pnpm, restores the pnpm store cache, and runs
+  ``pnpm install``. Reusable across epik-agent repositories.
+
+inputs:
+  node-version:
+    description: Node.js version to install
+    required: false
+    default: "22"
+  pnpm-version:
+    description: pnpm version to install
+    required: false
+    default: "10"
+  working-directory:
+    description: Directory that contains package.json
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ inputs.pnpm-version }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+        cache-dependency-path: ${{ inputs.working-directory }}/pnpm-lock.yaml
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: pnpm install --frozen-lockfile

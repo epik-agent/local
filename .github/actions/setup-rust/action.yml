@@ -1,0 +1,41 @@
+name: Setup Rust toolchain
+description: >
+  Installs the Rust toolchain (stable by default) with the requested components,
+  and restores the cargo registry and build cache. Reusable across epik-agent
+  repositories.
+
+inputs:
+  toolchain:
+    description: Rust toolchain to install (stable, nightly, etc.)
+    required: false
+    default: stable
+  components:
+    description: Space-separated list of rustup components to install
+    required: false
+    default: rustfmt clippy
+  working-directory:
+    description: Directory that contains Cargo.toml
+    required: false
+    default: src-tauri
+
+runs:
+  using: composite
+  steps:
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        components: ${{ inputs.components }}
+
+    - name: Restore Cargo cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          ${{ inputs.working-directory }}/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles(format('{0}/Cargo.lock', inputs.working-directory)) }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-

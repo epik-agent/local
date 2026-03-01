@@ -1,0 +1,1 @@
+# Clippy configuration — all warnings are errors in CI (passed via -D warnings)

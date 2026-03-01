@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Frontend: format, lint, type-check, test
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js + pnpm
+        uses: ./.github/actions/setup-node
+
+      - name: Check formatting (Prettier)
+        run: pnpm format:check
+
+      - name: Lint (ESLint — all warnings are errors)
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build frontend
+        run: pnpm build
+
+  # ---------------------------------------------------------------------------
+  # Rust backend: format, clippy (-D warnings), build
+  # ---------------------------------------------------------------------------
+  rust:
+    name: Rust backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies (Tauri on Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+
+      - name: Check formatting (rustfmt)
+        working-directory: src-tauri
+        run: cargo fmt --check
+
+      - name: Clippy (all warnings are errors)
+        working-directory: src-tauri
+        run: cargo clippy -- -D warnings
+
+      - name: Build (check)
+        working-directory: src-tauri
+        run: cargo check --release

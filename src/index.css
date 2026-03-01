@@ -1,0 +1,121 @@
+/* Geist font from Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap");
+
+/* Tailwind v4 */
+@import "tailwindcss";
+
+/* Dark mode via .dark class on <html> */
+@variant dark (&:where(.dark, .dark *));
+
+/* Brand CSS custom properties */
+:root,
+[data-theme="dark"],
+.dark {
+  --brand-font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --brand-font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* Background */
+  --brand-dark-bg-root: #0a0a0a;
+  --brand-dark-bg-surface: #111111;
+  --brand-dark-bg-raised: #1a1a1a;
+  --brand-dark-bg-input: #141414;
+  --brand-dark-bg-bar: #0e0e0e;
+  --brand-dark-bg-hover: #1f1f1f;
+  --brand-dark-bg-active: #262626;
+  --brand-dark-bg-overlay: rgba(0, 0, 0, 0.6);
+
+  /* Text */
+  --brand-dark-text-primary: #ededed;
+  --brand-dark-text-secondary: #a0a0a0;
+  --brand-dark-text-muted: #666666;
+  --brand-dark-text-faint: #404040;
+  --brand-dark-text-inverse: #0a0a0a;
+
+  /* Accent */
+  --brand-dark-accent-base: #00e599;
+  --brand-dark-accent-hover: #33edb3;
+  --brand-dark-accent-muted: rgba(0, 229, 153, 0.12);
+  --brand-dark-accent-onAccent: #0a0a0a;
+
+  /* Semantic */
+  --brand-dark-semantic-success: #00e599;
+  --brand-dark-semantic-warning: #f5a623;
+  --brand-dark-semantic-error: #ef4444;
+  --brand-dark-semantic-info: #a0a0a0;
+
+  /* Border */
+  --brand-dark-border-default: #1f1f1f;
+  --brand-dark-border-strong: #333333;
+
+  /* Aliases for convenience */
+  --bg: var(--brand-dark-bg-root);
+  --bg-surface: var(--brand-dark-bg-surface);
+  --bg-raised: var(--brand-dark-bg-raised);
+  --text: var(--brand-dark-text-primary);
+  --text-muted: var(--brand-dark-text-muted);
+  --accent: var(--brand-dark-accent-base);
+  --accent-hover: var(--brand-dark-accent-hover);
+  --accent-muted: var(--brand-dark-accent-muted);
+  --border: var(--brand-dark-border-default);
+}
+
+/* Light theme overrides */
+[data-theme="light"] {
+  --bg: #fafafa;
+  --bg-surface: #f0f0f0;
+  --bg-raised: #e5e5e5;
+  --text: #0a0a0a;
+  --text-muted: #737373;
+  --accent: #00b377;
+  --accent-hover: #009966;
+  --accent-muted: rgba(0, 179, 119, 0.1);
+  --border: #e0e0e0;
+}
+
+/* Base styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--brand-font-sans);
+  background-color: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+}
+
+@theme {
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* Brand color tokens as Tailwind theme extensions */
+  --color-brand-bg: var(--bg);
+  --color-brand-surface: var(--bg-surface);
+  --color-brand-raised: var(--bg-raised);
+  --color-brand-text: var(--text);
+  --color-brand-muted: var(--text-muted);
+  --color-brand-accent: var(--accent);
+  --color-brand-accent-hover: var(--accent-hover);
+  --color-brand-accent-muted: var(--accent-muted);
+  --color-brand-border: var(--border);
+
+  /* Fixed accent for direct use */
+  --color-mint: #00e599;
+  --color-mint-hover: #33edb3;
+  --color-mint-muted: rgba(0, 229, 153, 0.12);
+}
