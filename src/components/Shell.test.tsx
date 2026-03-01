@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { Shell } from "./Shell";
 
 describe("Shell", () => {
@@ -42,5 +42,10 @@ describe("Shell", () => {
     render(<Shell />);
     const shell = screen.getByTestId("shell");
     expect(shell).toHaveStyle({ backgroundColor: "var(--bg)" });
+  });
+
+  it("renders the theme toggle button in the header", () => {
+    render(<Shell />);
+    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
   });
 });
