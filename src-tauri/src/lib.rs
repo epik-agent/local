@@ -670,12 +670,10 @@ async fn sidecar_list_builds(
 /// Runs ``gh --version`` and returns ``true`` if the command exits with
 /// status 0, ``false`` otherwise.
 #[tauri::command]
-async fn check_gh_installed(app: AppHandle) -> bool {
-    app.shell()
-        .command("gh")
-        .args(["--version"])
+async fn check_gh_installed() -> bool {
+    std::process::Command::new("gh")
+        .arg("--version")
         .output()
-        .await
         .map(|o| o.status.success())
         .unwrap_or(false)
 }
@@ -685,35 +683,23 @@ async fn check_gh_installed(app: AppHandle) -> bool {
 /// Runs ``gh auth status`` and returns ``true`` if the command exits with
 /// status 0 (authenticated), ``false`` otherwise.
 #[tauri::command]
-async fn check_gh_auth(app: AppHandle) -> bool {
-    app.shell()
-        .command("gh")
+async fn check_gh_auth() -> bool {
+    std::process::Command::new("gh")
         .args(["auth", "status"])
         .output()
-        .await
         .map(|o| o.status.success())
         .unwrap_or(false)
 }
 
 /// Check whether the machine currently has a network connection.
 ///
-/// Attempts a DNS resolution of ``github.com`` via ``curl`` (available on
-/// macOS and most Linux distros).  Returns ``true`` on success, ``false``
-/// otherwise.
+/// Attempts to reach ``github.com`` via ``curl``.  Returns ``true`` on
+/// success, ``false`` otherwise.
 #[tauri::command]
-async fn check_network(app: AppHandle) -> bool {
-    app.shell()
-        .command("curl")
-        .args([
-            "-s",
-            "--max-time",
-            "3",
-            "-o",
-            "/dev/null",
-            "https://github.com",
-        ])
+async fn check_network() -> bool {
+    std::process::Command::new("curl")
+        .args(["-s", "--max-time", "3", "-o", "/dev/null", "https://github.com"])
         .output()
-        .await
         .map(|o| o.status.success())
         .unwrap_or(false)
 }
