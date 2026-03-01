@@ -27,8 +27,8 @@ export function AuthErrorBanner({
     <div
       className="flex w-full items-center justify-between gap-4 px-4 py-2 text-sm"
       style={{
-        backgroundColor: "var(--error, #b91c1c)",
-        color: "var(--error-text, #fff)",
+        backgroundColor: "var(--color-error)",
+        color: "var(--text-inverse)",
         position: "sticky",
         top: 0,
         zIndex: 50,

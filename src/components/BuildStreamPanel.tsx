@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { BuildSession } from "../lib/build";
 import { useBuildStream } from "../hooks/useBuildStream";
+import { useResizeHandle } from "../hooks/useResizeHandle";
 
 const DEFAULT_HEIGHT = 200;
 const MIN_HEIGHT = 80;
@@ -90,8 +91,8 @@ function SessionStream({ sessionId, height, logRef }: SessionStreamProps): React
         style={{
           height: `${String(height)}px`,
           fontFamily: "var(--brand-font-mono)",
-          fontSize: "12px",
-          lineHeight: "1.6",
+          fontSize: "13px",
+          lineHeight: "1.7",
           color: "var(--text-secondary)",
         }}
       >
@@ -146,51 +147,22 @@ export function BuildStreamPanel({
   onSelectSession,
 }: BuildStreamPanelProps): React.ReactElement {
   const [isOpen, setIsOpen] = useState(true);
-  const [height, setHeight] = useState(DEFAULT_HEIGHT);
   const logRef = useRef<HTMLDivElement | null>(null);
-  const isDraggingRef = useRef(false);
-  const dragStartYRef = useRef(0);
-  const dragStartHeightRef = useRef(DEFAULT_HEIGHT);
+
+  const {
+    size: height,
+    isDragging,
+    onMouseDown: handleDragStart,
+  } = useResizeHandle({
+    defaultSize: DEFAULT_HEIGHT,
+    minSize: MIN_HEIGHT,
+    maxSize: MAX_HEIGHT,
+    axis: "vertical",
+    direction: "negative",
+  });
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const sessionId = activeSession?.id;
-
-  // Auto-scroll to bottom when new lines arrive — handled by the inner hook
-  // via the logRef passed to SessionStream.
-
-  const handleDragStart = useCallback(
-    (e: React.MouseEvent): void => {
-      isDraggingRef.current = true;
-      dragStartYRef.current = e.clientY;
-      dragStartHeightRef.current = height;
-      e.preventDefault();
-    },
-    [height],
-  );
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent): void => {
-      if (!isDraggingRef.current) return;
-      const delta = dragStartYRef.current - e.clientY;
-      const newHeight = Math.min(
-        MAX_HEIGHT,
-        Math.max(MIN_HEIGHT, dragStartHeightRef.current + delta),
-      );
-      setHeight(newHeight);
-    };
-
-    const handleMouseUp = (): void => {
-      isDraggingRef.current = false;
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-
-    return (): void => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, []);
 
   const handleSelect = useCallback(
     (id: string): void => {
@@ -212,15 +184,20 @@ export function BuildStreamPanel({
       <div
         data-testid="build-stream-drag-handle"
         onMouseDown={handleDragStart}
-        className="flex h-1 shrink-0 cursor-row-resize items-center justify-center"
-        style={{ backgroundColor: "var(--border)" }}
+        className="group flex h-2 shrink-0 cursor-row-resize items-center justify-center transition-colors"
+        style={{ backgroundColor: isDragging ? "var(--border-strong)" : "var(--border)" }}
         role="separator"
         aria-label="Resize build panel"
-      />
+      >
+        <div
+          className="h-0.5 w-8 rounded-full transition-colors"
+          style={{ backgroundColor: isDragging ? "var(--text-muted)" : "var(--text-faint)" }}
+        />
+      </div>
 
       {/* Header bar */}
       <div
-        className="flex shrink-0 items-center gap-2 border-b px-3 py-1.5"
+        className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5"
         style={{ borderColor: "var(--border)" }}
       >
         <button
@@ -236,7 +213,7 @@ export function BuildStreamPanel({
             {isOpen ? <path d="M6 8L1 3h10L6 8Z" /> : <path d="M6 4L11 9H1L6 4Z" />}
           </svg>
         </button>
-        <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+        <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
           Build Output
         </span>
       </div>

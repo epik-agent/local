@@ -18,8 +18,8 @@ export function NetworkBanner(): React.ReactElement | null {
     <div
       className="flex w-full items-center justify-center px-4 py-2 text-sm font-medium"
       style={{
-        backgroundColor: "var(--warning, #b45309)",
-        color: "var(--warning-text, #fff)",
+        backgroundColor: "var(--color-warning)",
+        color: "var(--text-inverse)",
         position: "sticky",
         top: 0,
         zIndex: 50,

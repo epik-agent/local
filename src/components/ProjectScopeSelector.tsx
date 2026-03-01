@@ -35,10 +35,10 @@ export function ProjectScopeSelector({
           }}
           placeholder="Org"
           aria-label="GitHub organisation"
-          className="rounded border px-2 py-1 text-sm"
+          className="flex-1 rounded-lg border px-3 py-2 text-sm outline-none transition-colors"
           style={{
             borderColor: "var(--border)",
-            backgroundColor: "var(--bg)",
+            backgroundColor: "var(--bg-input)",
             color: "var(--text)",
           }}
           data-testid="org-input"
@@ -52,10 +52,10 @@ export function ProjectScopeSelector({
           }}
           placeholder="Repo"
           aria-label="GitHub repository"
-          className="rounded border px-2 py-1 text-sm"
+          className="flex-1 rounded-lg border px-3 py-2 text-sm outline-none transition-colors"
           style={{
             borderColor: "var(--border)",
-            backgroundColor: "var(--bg)",
+            backgroundColor: "var(--bg-input)",
             color: "var(--text)",
           }}
           data-testid="repo-input"

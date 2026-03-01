@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "../hooks/useChat";
+import { useResizeHandle } from "../hooks/useResizeHandle";
 import { MessageBubble } from "./MessageBubble";
 import type { Conversation } from "../lib/conversation";
 import type { SidecarStatus } from "../lib/sidecar";
@@ -38,6 +39,18 @@ export function ChatView({
   const [inputText, setInputText] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const {
+    size: sidebarWidth,
+    isDragging: isSidebarDragging,
+    onMouseDown: handleSidebarDragStart,
+  } = useResizeHandle({
+    defaultSize: 240,
+    minSize: 160,
+    maxSize: 400,
+    axis: "horizontal",
+    direction: "positive",
+  });
 
   // Auto-scroll to latest message whenever the active conversation messages update.
   useEffect(() => {
@@ -79,111 +92,132 @@ export function ChatView({
 
   return (
     <div className="flex h-full" data-testid="chat-view">
-      {/* Conversation sidebar */}
-      <aside
-        className="flex flex-col border-r"
+      {/* Conversation sidebar + resize handle */}
+      <div
+        className="flex shrink-0"
         style={{
-          width: sidebarOpen ? "220px" : "48px",
-          minWidth: sidebarOpen ? "220px" : "48px",
-          backgroundColor: "var(--bg-bar)",
-          borderColor: "var(--border)",
-          transition: "width 0.2s ease, min-width 0.2s ease",
+          width: sidebarOpen ? `${String(sidebarWidth)}px` : "48px",
+          minWidth: sidebarOpen ? `${String(sidebarWidth)}px` : "48px",
+          transition: isSidebarDragging ? "none" : "width 0.2s ease, min-width 0.2s ease",
         }}
-        data-testid="conversation-sidebar"
       >
-        {/* Sidebar header */}
-        <div
-          className="flex items-center gap-2 border-b px-3 py-3"
-          style={{ borderColor: "var(--border)" }}
+        <aside
+          className="flex flex-1 flex-col overflow-hidden"
+          style={{
+            backgroundColor: "var(--bg-bar)",
+          }}
+          data-testid="conversation-sidebar"
         >
-          <button
-            onClick={(): void => {
-              setSidebarOpen((o) => !o);
-            }}
-            className="flex-shrink-0 rounded p-1 transition-colors"
-            style={{ color: "var(--text-muted)" }}
-            aria-label="Toggle sidebar"
-            title="Toggle sidebar"
+          {/* Sidebar header */}
+          <div
+            className="flex items-center gap-2 border-b px-3 py-3.5"
+            style={{ borderColor: "var(--border)" }}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <rect x="1" y="3" width="14" height="1.5" rx="0.75" />
-              <rect x="1" y="7.25" width="14" height="1.5" rx="0.75" />
-              <rect x="1" y="11.5" width="14" height="1.5" rx="0.75" />
-            </svg>
-          </button>
-          {sidebarOpen && (
             <button
-              onClick={newConversation}
-              className="flex flex-1 items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors"
-              style={{
-                backgroundColor: "var(--accent-muted)",
-                color: "var(--accent)",
+              onClick={(): void => {
+                setSidebarOpen((o) => !o);
               }}
-              data-testid="new-conversation-button"
-              title="New conversation"
+              className="flex-shrink-0 rounded p-1.5 transition-colors"
+              style={{ color: "var(--text-muted)" }}
+              aria-label="Toggle sidebar"
+              title="Toggle sidebar"
             >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                <path d="M6 1a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5H1.75a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 6 1Z" />
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <rect x="1" y="3" width="14" height="1.5" rx="0.75" />
+                <rect x="1" y="7.25" width="14" height="1.5" rx="0.75" />
+                <rect x="1" y="11.5" width="14" height="1.5" rx="0.75" />
               </svg>
-              New chat
             </button>
-          )}
-          {!sidebarOpen && (
-            <button
-              onClick={newConversation}
-              className="sr-only"
-              data-testid="new-conversation-button"
-              aria-label="New conversation"
-            >
-              New
-            </button>
-          )}
-        </div>
+            {sidebarOpen && (
+              <button
+                onClick={newConversation}
+                className="flex flex-1 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: "var(--accent-muted)",
+                  color: "var(--accent)",
+                }}
+                data-testid="new-conversation-button"
+                title="New conversation"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                  <path d="M6 1a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5H1.75a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 6 1Z" />
+                </svg>
+                New chat
+              </button>
+            )}
+            {!sidebarOpen && (
+              <button
+                onClick={newConversation}
+                className="sr-only"
+                data-testid="new-conversation-button"
+                aria-label="New conversation"
+              >
+                New
+              </button>
+            )}
+          </div>
 
-        {/* Conversation list */}
+          {/* Conversation list */}
+          {sidebarOpen && (
+            <nav className="flex-1 overflow-y-auto py-2">
+              {conversations.map((conv: Conversation) => (
+                <div key={conv.id} className="group flex items-center gap-1 px-2 py-1">
+                  <button
+                    onClick={(): void => {
+                      selectConversation(conv.id);
+                    }}
+                    className="flex-1 truncate rounded-lg px-2.5 py-2 text-left text-sm transition-colors"
+                    style={{
+                      backgroundColor:
+                        activeConversation?.id === conv.id ? "var(--bg-active)" : "transparent",
+                      color:
+                        activeConversation?.id === conv.id
+                          ? "var(--text)"
+                          : "var(--text-secondary)",
+                    }}
+                    title={conv.title}
+                  >
+                    {conv.title}
+                  </button>
+                  <button
+                    onClick={(e): void => {
+                      handleDeleteConversation(e, conv.id);
+                    }}
+                    className="flex-shrink-0 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+                    style={{ color: "var(--text-muted)" }}
+                    aria-label={`Delete conversation: ${conv.title}`}
+                    title="Delete"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                      <path d="M9.78 3.28a.75.75 0 0 0-1.06-1.06L6 4.94 3.28 2.22a.75.75 0 0 0-1.06 1.06L4.94 6 2.22 8.72a.75.75 0 1 0 1.06 1.06L6 7.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L7.06 6l2.72-2.72Z" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </nav>
+          )}
+        </aside>
+
+        {/* Sidebar resize handle */}
         {sidebarOpen && (
-          <nav className="flex-1 overflow-y-auto py-2">
-            {conversations.map((conv: Conversation) => (
-              <div key={conv.id} className="group flex items-center gap-1 px-2 py-0.5">
-                <button
-                  onClick={(): void => {
-                    selectConversation(conv.id);
-                  }}
-                  className="flex-1 truncate rounded px-2 py-1.5 text-left text-xs transition-colors"
-                  style={{
-                    backgroundColor:
-                      activeConversation?.id === conv.id ? "var(--bg-active)" : "transparent",
-                    color:
-                      activeConversation?.id === conv.id ? "var(--text)" : "var(--text-secondary)",
-                  }}
-                  title={conv.title}
-                >
-                  {conv.title}
-                </button>
-                <button
-                  onClick={(e): void => {
-                    handleDeleteConversation(e, conv.id);
-                  }}
-                  className="flex-shrink-0 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100"
-                  style={{ color: "var(--text-muted)" }}
-                  aria-label={`Delete conversation: ${conv.title}`}
-                  title="Delete"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                    <path d="M9.78 3.28a.75.75 0 0 0-1.06-1.06L6 4.94 3.28 2.22a.75.75 0 0 0-1.06 1.06L4.94 6 2.22 8.72a.75.75 0 1 0 1.06 1.06L6 7.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L7.06 6l2.72-2.72Z" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </nav>
+          <div
+            data-testid="sidebar-resize-handle"
+            onMouseDown={handleSidebarDragStart}
+            className="flex w-1 shrink-0 cursor-col-resize items-center justify-center transition-colors"
+            style={{
+              backgroundColor: isSidebarDragging ? "var(--border-strong)" : "var(--border)",
+            }}
+            role="separator"
+            aria-label="Resize conversation sidebar"
+          />
         )}
-      </aside>
+      </div>
 
       {/* Main chat area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Message list */}
         <div
-          className="flex-1 overflow-y-auto px-4 py-4"
+          className="flex-1 overflow-y-auto px-6 py-5"
           style={{ backgroundColor: "var(--bg)" }}
           data-testid="message-list"
         >
@@ -213,7 +247,7 @@ export function ChatView({
             </div>
           )}
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {messages.map((msg, index) => {
               const isThisMessageStreaming =
                 isLastMessageStreaming && index === messages.length - 1;
@@ -234,7 +268,7 @@ export function ChatView({
             style={{
               backgroundColor: "var(--bg-surface)",
               borderColor: "var(--border)",
-              color: "var(--color-error, #e53e3e)",
+              color: "var(--color-error)",
             }}
             data-testid="error-banner"
           >
@@ -244,13 +278,13 @@ export function ChatView({
 
         {/* Input bar */}
         <div
-          className="border-t px-4 py-3"
+          className="border-t px-5 py-4"
           style={{
             backgroundColor: "var(--bg-surface)",
             borderColor: "var(--border)",
           }}
         >
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-3">
             <textarea
               value={inputText}
               onChange={(e): void => {
@@ -266,12 +300,13 @@ export function ChatView({
               }
               disabled={streaming || !sidecarReady}
               rows={1}
-              className="flex-1 resize-none rounded-xl px-4 py-2.5 text-sm outline-none transition-colors"
+              className="flex-1 resize-none rounded-xl px-4 py-3 text-sm leading-relaxed outline-none transition-colors"
               style={{
                 backgroundColor: "var(--bg-input)",
                 color: "var(--text)",
                 border: "1px solid var(--border)",
                 fontFamily: "var(--brand-font-sans)",
+                minHeight: "44px",
                 maxHeight: "160px",
                 overflowY: "auto",
               }}
@@ -282,7 +317,7 @@ export function ChatView({
                 void handleSend();
               }}
               disabled={!canSend || streaming}
-              className="flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-40"
+              className="flex-shrink-0 rounded-xl px-5 py-3 text-sm font-medium transition-colors disabled:opacity-40"
               style={{
                 backgroundColor: canSend && !streaming ? "var(--accent)" : "var(--bg-raised)",
                 color: canSend && !streaming ? "var(--accent-on-accent)" : "var(--text-muted)",

@@ -25,9 +25,9 @@ export interface SetupWizardProps {
  */
 function StepCard({ children }: { children: React.ReactNode }): React.ReactElement {
   return (
-    <div className="flex h-full min-h-screen flex-col items-center justify-center p-8">
+    <div className="flex h-full min-h-screen flex-col items-center justify-center p-10">
       <div
-        className="flex w-full max-w-md flex-col gap-6 rounded-2xl p-8 shadow-lg"
+        className="flex w-full max-w-lg flex-col gap-8 rounded-2xl p-10 shadow-lg"
         style={{
           backgroundColor: "var(--bg-surface)",
           border: "1px solid var(--border)",
@@ -46,7 +46,7 @@ function RetryButton({ onRetry }: { onRetry: () => void }): React.ReactElement {
   return (
     <button
       onClick={onRetry}
-      className="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+      className="rounded-lg px-5 py-2.5 text-sm font-medium transition-colors"
       style={{
         backgroundColor: "var(--bg-raised)",
         color: "var(--text-muted)",
@@ -90,10 +90,10 @@ function GhMissingStep({ onRetry }: { onRetry: () => void }): React.ReactElement
   return (
     <StepCard>
       <div className="flex flex-col gap-4" data-testid="setup-step-gh-missing">
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
+        <h2 className="text-xl font-semibold" style={{ color: "var(--text)" }}>
           Install the gh CLI
         </h2>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
           Epik requires the GitHub CLI to interact with your repositories. Please install it and
           then click Retry.
         </p>
@@ -119,10 +119,10 @@ function GhUnauthStep({ onRetry }: { onRetry: () => void }): React.ReactElement 
   return (
     <StepCard>
       <div className="flex flex-col gap-4" data-testid="setup-step-gh-unauth">
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
+        <h2 className="text-xl font-semibold" style={{ color: "var(--text)" }}>
           Authenticate with GitHub
         </h2>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
           The gh CLI is installed but not authenticated. Run the following command in your terminal:
         </p>
         <code
@@ -148,10 +148,10 @@ function AppNotInstalledStep({ onRetry }: { onRetry: () => void }): React.ReactE
   return (
     <StepCard>
       <div className="flex flex-col gap-4" data-testid="setup-step-app-not-installed">
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
+        <h2 className="text-xl font-semibold" style={{ color: "var(--text)" }}>
           Install the Epik GitHub App
         </h2>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
           Epik needs to be installed on your GitHub organisation or repository to manage issues and
           pull requests.
         </p>
@@ -182,10 +182,10 @@ function ProjectSelectStep({ onComplete }: { onComplete: () => void }): React.Re
   return (
     <StepCard>
       <div className="flex flex-col gap-4" data-testid="setup-step-project-select">
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
+        <h2 className="text-xl font-semibold" style={{ color: "var(--text)" }}>
           Select a project
         </h2>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
           Choose the GitHub repository you want Epik to work with.
         </p>
         <ProjectScopeSelector
@@ -222,10 +222,10 @@ function ReadyStep({ onComplete }: { onComplete: () => void }): React.ReactEleme
   return (
     <StepCard>
       <div className="flex flex-col items-center gap-4" data-testid="setup-step-ready">
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
+        <h2 className="text-xl font-semibold" style={{ color: "var(--text)" }}>
           You are all set!
         </h2>
-        <p className="text-sm text-center" style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm leading-relaxed text-center" style={{ color: "var(--text-muted)" }}>
           Epik is ready to help you build. Click below to open the chat.
         </p>
         <button

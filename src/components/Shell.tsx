@@ -68,14 +68,14 @@ export function Shell(): React.ReactElement {
 
       {/* Title bar */}
       <header
-        className="flex flex-shrink-0 items-center gap-3 border-b px-4 py-3"
+        className="flex flex-shrink-0 items-center gap-3.5 border-b px-5 py-3.5"
         style={{
           backgroundColor: "var(--bg-surface)",
           borderColor: "var(--border)",
         }}
         data-testid="app-header"
       >
-        <Logo size={24} />
+        <Logo size={26} />
         <span className="text-sm font-semibold tracking-wide" style={{ color: "var(--text)" }}>
           Epik
         </span>
