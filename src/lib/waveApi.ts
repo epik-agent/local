@@ -18,10 +18,11 @@ import type { Wave } from "./build";
  * :param repo: GitHub repository name.
  * :returns: Array of waves with their issues.
  */
-export function fetchWaves(org: string, repo: string): Promise<Wave[]> {
+// eslint-disable-next-line @typescript-eslint/require-await
+export async function fetchWaves(org: string, repo: string): Promise<Wave[]> {
   // In the real implementation this would call the Epik MCP tool via sidecar.
   // For now return an empty list — the hook tests mock this function directly.
   void org;
   void repo;
-  return Promise.resolve([]);
+  return [];
 }

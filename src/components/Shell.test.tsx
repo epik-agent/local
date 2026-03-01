@@ -75,7 +75,7 @@ describe("Shell", () => {
       if (cmd === "check_gh_installed") return true;
       if (cmd === "check_gh_auth") return true;
       if (cmd === "check_network") return true;
-      if (cmd === "sidecar_start") return new Promise(() => undefined);
+      if (cmd === "sidecar_start") return await new Promise(() => undefined);
       return undefined;
     });
 
