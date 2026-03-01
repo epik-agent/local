@@ -1,0 +1,33 @@
+[package]
+name = "local"
+version = "0.1.0"
+description = "Epik Local — desktop application"
+authors = []
+edition = "2021"
+rust-version = "1.77"
+
+[[bin]]
+name = "local"
+path = "src/main.rs"
+
+[lib]
+name = "local_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+
+[profile.dev]
+incremental = true
