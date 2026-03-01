@@ -77,8 +77,8 @@ describe("useWaveData", () => {
   });
 
   it.each([
-    { org: null as null, repo: "local", scopeLabel: null },
-    { org: "epik-agent", repo: null as null, scopeLabel: null },
+    { org: null, repo: "local", scopeLabel: null },
+    { org: "epik-agent", repo: null, scopeLabel: null },
   ])("does not fetch when org=$org or repo=$repo is null", async ({ org, repo, scopeLabel }) => {
     mockUseProjectScope.mockReturnValue({
       org,
