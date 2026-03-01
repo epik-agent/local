@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
 
 export default tseslint.config(
-  { ignores: ["dist", "src-tauri/target"] },
+  { ignores: ["dist", "src-tauri/target", "sidecar"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
     files: ["**/*.{ts,tsx}"],
@@ -52,6 +52,7 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/require-await": "off",
     },
   },
   prettier,

@@ -1,0 +1,23 @@
+{
+  "name": "epik-sidecar",
+  "version": "0.1.0",
+  "description": "Epik Node.js sidecar — Claude Code SDK bridge for Tauri IPC",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "bundle": "node scripts/bundle.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

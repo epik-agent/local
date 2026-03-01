@@ -5,6 +5,11 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
+// Mock the Tauri event API — not available in the test environment
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn(),
+}));
+
 /**
  * Tauri patches the jsdom localStorage with a file-backed implementation that
  * drops ``clear()`` and may drop other methods depending on the version.
