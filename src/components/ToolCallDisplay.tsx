@@ -20,7 +20,7 @@ export function ToolCallDisplay({ toolCall }: ToolCallDisplayProps): React.React
 
   return (
     <div
-      className="rounded border p-2 text-xs font-mono"
+      className="rounded-lg border p-3 text-xs font-mono leading-relaxed"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       data-testid="tool-call-display"
     >
@@ -43,7 +43,7 @@ export function ToolCallDisplay({ toolCall }: ToolCallDisplayProps): React.React
           onClick={(): void => {
             setArgsOpen((prev) => !prev);
           }}
-          className="ml-2 rounded px-1 py-0.5 text-xs"
+          className="ml-2 rounded px-2 py-1 text-xs"
           style={{ color: "var(--text-muted)", backgroundColor: "var(--bg)" }}
           aria-expanded={argsOpen}
           aria-controls="tool-call-args"
@@ -57,7 +57,7 @@ export function ToolCallDisplay({ toolCall }: ToolCallDisplayProps): React.React
         id="tool-call-args"
         data-testid="tool-call-args"
         hidden={!argsOpen}
-        className="mt-1 overflow-auto rounded p-1 text-xs"
+        className="mt-2 overflow-auto rounded p-2 text-xs"
         style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
       >
         {formattedArgs}
@@ -67,10 +67,10 @@ export function ToolCallDisplay({ toolCall }: ToolCallDisplayProps): React.React
       {toolCall.result !== null && (
         <div
           data-testid="tool-call-result"
-          className="mt-1 overflow-auto rounded p-1 text-xs"
+          className="mt-2 overflow-auto rounded p-2 text-xs leading-relaxed"
           style={{
             backgroundColor: "var(--bg)",
-            color: toolCall.status === "error" ? "var(--error, #f87171)" : "var(--text-muted)",
+            color: toolCall.status === "error" ? "var(--color-error)" : "var(--text-muted)",
           }}
         >
           {toolCall.result}
@@ -83,12 +83,12 @@ export function ToolCallDisplay({ toolCall }: ToolCallDisplayProps): React.React
 function statusColor(status: McpToolCall["status"]): string {
   switch (status) {
     case "pending":
-      return "var(--text-muted, #6b7280)";
+      return "var(--text-muted)";
     case "running":
-      return "var(--accent, #34d399)";
+      return "var(--accent)";
     case "success":
-      return "var(--success, #4ade80)";
+      return "var(--color-success)";
     case "error":
-      return "var(--error, #f87171)";
+      return "var(--color-error)";
   }
 }

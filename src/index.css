@@ -8,14 +8,17 @@
 /* Dark mode via .dark class on <html> */
 @variant dark (&:where(.dark, .dark *));
 
-/* Brand CSS custom properties */
+/* === BRAND TOKENS (from @epik-agent/brand) === */
+/* These values are sourced from brand.json in the epik-agent/brand repo.
+   When the brand spec changes, update these raw tokens to match. */
+
 :root,
 [data-theme="dark"],
 .dark {
   --brand-font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --brand-font-mono: "Geist Mono", ui-monospace, monospace;
 
-  /* Background */
+  /* Brand raw tokens — dark */
   --brand-dark-bg-root: #0a0a0a;
   --brand-dark-bg-surface: #111111;
   --brand-dark-bg-raised: #1a1a1a;
@@ -25,30 +28,34 @@
   --brand-dark-bg-active: #262626;
   --brand-dark-bg-overlay: rgba(0, 0, 0, 0.6);
 
-  /* Text */
   --brand-dark-text-primary: #ededed;
   --brand-dark-text-secondary: #a0a0a0;
   --brand-dark-text-muted: #666666;
   --brand-dark-text-faint: #404040;
   --brand-dark-text-inverse: #0a0a0a;
 
-  /* Accent */
   --brand-dark-accent-base: #00e599;
   --brand-dark-accent-hover: #33edb3;
   --brand-dark-accent-muted: rgba(0, 229, 153, 0.12);
   --brand-dark-accent-onAccent: #0a0a0a;
 
-  /* Semantic */
   --brand-dark-semantic-success: #00e599;
+  --brand-dark-semantic-successMuted: rgba(0, 229, 153, 0.12);
   --brand-dark-semantic-warning: #f5a623;
+  --brand-dark-semantic-warningMuted: rgba(245, 166, 35, 0.12);
   --brand-dark-semantic-error: #ef4444;
+  --brand-dark-semantic-errorMuted: rgba(239, 68, 68, 0.12);
   --brand-dark-semantic-info: #a0a0a0;
 
-  /* Border */
   --brand-dark-border-default: #1f1f1f;
   --brand-dark-border-strong: #333333;
 
-  /* Semantic aliases */
+  --brand-dark-graph-closed: #666666;
+  --brand-dark-graph-open: #f5a623;
+  --brand-dark-graph-active: #00e599;
+  --brand-dark-graph-link: #333333;
+
+  /* === SEMANTIC ALIASES (dark) === */
   --bg: var(--brand-dark-bg-root);
   --bg-surface: var(--brand-dark-bg-surface);
   --bg-raised: var(--brand-dark-bg-raised);
@@ -72,6 +79,15 @@
   --border: var(--brand-dark-border-default);
   --border-strong: var(--brand-dark-border-strong);
 
+  --semantic-successMuted: var(--brand-dark-semantic-successMuted);
+  --semantic-warningMuted: var(--brand-dark-semantic-warningMuted);
+  --semantic-errorMuted: var(--brand-dark-semantic-errorMuted);
+
+  --graph-closed: var(--brand-dark-graph-closed);
+  --graph-open: var(--brand-dark-graph-open);
+  --graph-active: var(--brand-dark-graph-active);
+  --graph-link: var(--brand-dark-graph-link);
+
   /* GitHub-style status colours — dark-mode */
   --color-status-done: #3fb950;
   --color-status-in-progress: #a371f7;
@@ -84,42 +100,89 @@
   --color-info: var(--brand-dark-semantic-info);
 }
 
-/* Light theme overrides */
+/* === BRAND TOKENS — Light (from @epik-agent/brand) === */
 [data-theme="light"],
 html:not(.dark) {
-  --bg: #fafafa;
-  --bg-surface: #f0f0f0;
-  --bg-raised: #e5e5e5;
-  --bg-input: #ffffff;
-  --bg-bar: #f5f5f5;
-  --bg-hover: #ebebeb;
-  --bg-active: #e0e0e0;
-  --bg-overlay: rgba(0, 0, 0, 0.3);
+  /* Brand raw tokens — light */
+  --brand-light-bg-root: #fafafa;
+  --brand-light-bg-surface: #f0f0f0;
+  --brand-light-bg-raised: #e5e5e5;
+  --brand-light-bg-input: #ffffff;
+  --brand-light-bg-bar: #f0f0f0;
+  --brand-light-bg-hover: #e0e0e0;
+  --brand-light-bg-active: #d4d4d4;
+  --brand-light-bg-overlay: rgba(0, 0, 0, 0.15);
 
-  --text: #0a0a0a;
-  --text-secondary: #404040;
-  --text-muted: #737373;
-  --text-faint: #b0b0b0;
-  --text-inverse: #fafafa;
+  --brand-light-text-primary: #0a0a0a;
+  --brand-light-text-secondary: #525252;
+  --brand-light-text-muted: #737373;
+  --brand-light-text-faint: #a3a3a3;
+  --brand-light-text-inverse: #ededed;
 
-  --accent: #00b377;
-  --accent-hover: #009966;
-  --accent-muted: rgba(0, 179, 119, 0.1);
-  --accent-on-accent: #ffffff;
+  --brand-light-accent-base: #00b377;
+  --brand-light-accent-hover: #009966;
+  --brand-light-accent-muted: rgba(0, 179, 119, 0.1);
+  --brand-light-accent-onAccent: #ffffff;
 
-  --border: #e0e0e0;
-  --border-strong: #cccccc;
+  --brand-light-semantic-success: #00b377;
+  --brand-light-semantic-successMuted: rgba(0, 179, 119, 0.1);
+  --brand-light-semantic-warning: #b45309;
+  --brand-light-semantic-warningMuted: rgba(180, 83, 9, 0.1);
+  --brand-light-semantic-error: #dc2626;
+  --brand-light-semantic-errorMuted: rgba(220, 38, 38, 0.1);
+  --brand-light-semantic-info: #525252;
 
-  /* GitHub-style status colours — light-mode adjusted */
+  --brand-light-border-default: #e0e0e0;
+  --brand-light-border-strong: #c7c7c7;
+
+  --brand-light-graph-closed: #a3a3a3;
+  --brand-light-graph-open: #b45309;
+  --brand-light-graph-active: #00b377;
+  --brand-light-graph-link: #d4d4d4;
+
+  /* === SEMANTIC ALIASES (light) === */
+  --bg: var(--brand-light-bg-root);
+  --bg-surface: var(--brand-light-bg-surface);
+  --bg-raised: var(--brand-light-bg-raised);
+  --bg-input: var(--brand-light-bg-input);
+  --bg-bar: var(--brand-light-bg-bar);
+  --bg-hover: var(--brand-light-bg-hover);
+  --bg-active: var(--brand-light-bg-active);
+  --bg-overlay: var(--brand-light-bg-overlay);
+
+  --text: var(--brand-light-text-primary);
+  --text-secondary: var(--brand-light-text-secondary);
+  --text-muted: var(--brand-light-text-muted);
+  --text-faint: var(--brand-light-text-faint);
+  --text-inverse: var(--brand-light-text-inverse);
+
+  --accent: var(--brand-light-accent-base);
+  --accent-hover: var(--brand-light-accent-hover);
+  --accent-muted: var(--brand-light-accent-muted);
+  --accent-on-accent: var(--brand-light-accent-onAccent);
+
+  --border: var(--brand-light-border-default);
+  --border-strong: var(--brand-light-border-strong);
+
+  --semantic-successMuted: var(--brand-light-semantic-successMuted);
+  --semantic-warningMuted: var(--brand-light-semantic-warningMuted);
+  --semantic-errorMuted: var(--brand-light-semantic-errorMuted);
+
+  --graph-closed: var(--brand-light-graph-closed);
+  --graph-open: var(--brand-light-graph-open);
+  --graph-active: var(--brand-light-graph-active);
+  --graph-link: var(--brand-light-graph-link);
+
+  /* GitHub-style status colours — light-mode */
   --color-status-done: #1a7f37;
   --color-status-in-progress: #7c3aed;
   --color-status-todo: #0969da;
 
   /* Semantic colours */
-  --color-success: #1a7f37;
-  --color-warning: #9a6700;
-  --color-error: #cf222e;
-  --color-info: #0969da;
+  --color-success: var(--brand-light-semantic-success);
+  --color-warning: var(--brand-light-semantic-warning);
+  --color-error: var(--brand-light-semantic-error);
+  --color-info: var(--brand-light-semantic-info);
 }
 
 /* Base styles */
@@ -146,6 +209,45 @@ body {
 
 #root {
   height: 100%;
+}
+
+/* === APP STYLES === */
+
+/* Focus ring for interactive elements */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Prose overrides for assistant message markdown */
+.prose {
+  --tw-prose-body: var(--text);
+  --tw-prose-headings: var(--text);
+  --tw-prose-links: var(--accent);
+  --tw-prose-bold: var(--text);
+  --tw-prose-code: var(--text);
+  --tw-prose-pre-bg: var(--bg-input);
+}
+
+.prose code {
+  font-family: var(--brand-font-mono);
+  background-color: var(--bg-input);
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.prose pre {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.prose p + p {
+  margin-top: 0.75em;
 }
 
 @theme {
@@ -189,6 +291,17 @@ body {
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);
   --color-info: var(--color-info);
+
+  /* Semantic muted feedback */
+  --color-success-muted: var(--semantic-successMuted);
+  --color-warning-muted: var(--semantic-warningMuted);
+  --color-error-muted: var(--semantic-errorMuted);
+
+  /* Graph tokens */
+  --color-graph-closed: var(--graph-closed);
+  --color-graph-open: var(--graph-open);
+  --color-graph-active: var(--graph-active);
+  --color-graph-link: var(--graph-link);
 
   /* Fixed mint accent for direct use */
   --color-mint: #00e599;

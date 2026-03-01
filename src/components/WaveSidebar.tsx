@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { BuildSession, IssueStatus, WaveIssue } from "../lib/build";
 import { useProjectScope } from "../hooks/useProjectScope";
+import { useResizeHandle } from "../hooks/useResizeHandle";
 import { useWaveData } from "../hooks/useWaveData";
 
 // ---------------------------------------------------------------------------
@@ -56,7 +57,7 @@ function IssueRow({ issue, org, repo }: IssueRowProps): React.ReactElement {
     <div
       data-testid={`issue-row-${String(issue.number)}`}
       data-active={String(issue.isActive)}
-      className="flex flex-col gap-0.5 rounded px-2 py-1.5"
+      className="flex flex-col gap-1 rounded-lg px-2.5 py-2"
       style={{
         backgroundColor: issue.isActive ? "var(--bg-active)" : "transparent",
         borderLeft: issue.isActive ? "2px solid var(--accent)" : "2px solid transparent",
@@ -69,7 +70,7 @@ function IssueRow({ issue, org, repo }: IssueRowProps): React.ReactElement {
         </span>
         <a
           href={issueUrl}
-          className="min-w-0 flex-1 truncate text-xs font-medium"
+          className="min-w-0 flex-1 truncate text-sm font-medium"
           style={{
             color: issue.isActive ? "var(--text)" : "var(--text-secondary)",
             textDecoration: "none",
@@ -231,6 +232,14 @@ export function WaveSidebar({
   const { org, repo } = useProjectScope();
   const [isOpen, setIsOpen] = useState(true);
 
+  const { size: sidebarWidth, isDragging, onMouseDown: handleDragStart } = useResizeHandle({
+    defaultSize: 280,
+    minSize: 180,
+    maxSize: 480,
+    axis: "horizontal",
+    direction: "negative",
+  });
+
   const boardUrl =
     org !== null && repo !== null
       ? `https://github.com/orgs/${org}/projects`
@@ -240,21 +249,36 @@ export function WaveSidebar({
   const hasMultipleSessions = sessions.length > 1;
 
   return (
-    <aside
+    <div
       data-testid="wave-sidebar"
-      className="flex flex-col border-l"
+      className="flex shrink-0"
       style={{
-        width: isOpen ? "260px" : "40px",
-        minWidth: isOpen ? "260px" : "40px",
-        backgroundColor: "var(--bg-bar)",
-        borderColor: "var(--border)",
-        transition: "width 0.2s ease, min-width 0.2s ease",
-        overflowY: isOpen ? "auto" : "hidden",
+        width: isOpen ? `${sidebarWidth}px` : "40px",
+        minWidth: isOpen ? `${sidebarWidth}px` : "40px",
+        transition: isDragging ? "none" : "width 0.2s ease, min-width 0.2s ease",
       }}
     >
+      {/* Left-edge resize handle */}
+      {isOpen && (
+        <div
+          data-testid="wave-sidebar-resize-handle"
+          onMouseDown={handleDragStart}
+          className="flex w-1 shrink-0 cursor-col-resize items-center justify-center transition-colors"
+          style={{ backgroundColor: isDragging ? "var(--border-strong)" : "var(--border)" }}
+          role="separator"
+          aria-label="Resize wave sidebar"
+        />
+      )}
+      <aside
+        className="flex flex-1 flex-col overflow-hidden"
+        style={{
+          backgroundColor: "var(--bg-bar)",
+          overflowY: isOpen ? "auto" : "hidden",
+        }}
+      >
       {/* Header */}
       <div
-        className="flex shrink-0 items-center gap-2 border-b px-2 py-2"
+        className="flex shrink-0 items-center gap-2 border-b px-3 py-3"
         style={{ borderColor: "var(--border)" }}
       >
         <button
@@ -273,7 +297,7 @@ export function WaveSidebar({
         </button>
         {isOpen && (
           <span
-            className="truncate text-xs font-semibold"
+            className="truncate text-sm font-semibold"
             style={{ color: "var(--text-secondary)" }}
           >
             Waves
@@ -283,7 +307,7 @@ export function WaveSidebar({
 
       {/* Content */}
       {isOpen && (
-        <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
           {/* Active build selector — shown when more than one session is running */}
           {hasMultipleSessions && onSelectSession !== undefined && (
             <ActiveBuildSelector
@@ -331,5 +355,6 @@ export function WaveSidebar({
         </div>
       )}
     </aside>
+    </div>
   );
 }
