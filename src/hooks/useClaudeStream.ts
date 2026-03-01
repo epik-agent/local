@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   CancelPayload,
   CompletePayload,
+  ConversationTurn,
   ErrorPayload,
   SendMessagePayload,
   TokenPayload,
@@ -21,8 +22,8 @@ export interface UseClaudeStreamResult {
   streaming: boolean;
   /** Any error that occurred during the current request. */
   error: string | null;
-  /** Send a message to Claude via the sidecar. */
-  sendMessage: (message: string) => Promise<void>;
+  /** Send a message to Claude via the sidecar, optionally passing conversation history. */
+  sendMessage: (message: string, history?: ConversationTurn[]) => Promise<void>;
   /** Cancel the currently in-flight streaming request. */
   cancel: () => Promise<void>;
 }
@@ -99,28 +100,32 @@ export function useClaudeStream(): UseClaudeStreamResult {
     };
   }, []);
 
-  const sendMessage = useCallback(async (message: string): Promise<void> => {
-    const requestId = generateRequestId();
-    currentRequestIdRef.current = requestId;
+  const sendMessage = useCallback(
+    async (message: string, history?: ConversationTurn[]): Promise<void> => {
+      const requestId = generateRequestId();
+      currentRequestIdRef.current = requestId;
 
-    // Reset state for the new request
-    setTokens([]);
-    setResponse(null);
-    setError(null);
-    setStreaming(true);
+      // Reset state for the new request
+      setTokens([]);
+      setResponse(null);
+      setError(null);
+      setStreaming(true);
 
-    try {
-      await invoke("sidecar_send_message", {
-        requestId,
-        message,
-      } satisfies SendMessagePayload);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(errorMessage);
-      setStreaming(false);
-      currentRequestIdRef.current = null;
-    }
-  }, []);
+      try {
+        await invoke("sidecar_send_message", {
+          requestId,
+          message,
+          history,
+        } satisfies SendMessagePayload);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        setError(errorMessage);
+        setStreaming(false);
+        currentRequestIdRef.current = null;
+      }
+    },
+    [],
+  );
 
   const cancel = useCallback(async (): Promise<void> => {
     const requestId = currentRequestIdRef.current;

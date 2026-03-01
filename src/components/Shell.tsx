@@ -1,13 +1,13 @@
+import { ChatView } from "./ChatView";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 
 /**
- * Main application shell — the branded empty canvas.
+ * Main application shell.
  *
- * Renders the top-level layout with the Epik brand: dark background, Geist font,
- * and the mint accent colour in the placeholder heading. This component provides
- * the structural container for the application content, including the persistent
- * theme toggle button in the title bar.
+ * Renders the persistent title bar (brand logo, name, theme toggle) and hosts
+ * the ``ChatView`` as the primary content zone.  This is the root layout
+ * component that composes the full app UI.
  */
 export function Shell(): React.ReactElement {
   return (
@@ -18,7 +18,7 @@ export function Shell(): React.ReactElement {
     >
       {/* Title bar */}
       <header
-        className="flex items-center gap-3 border-b px-4 py-3"
+        className="flex flex-shrink-0 items-center gap-3 border-b px-4 py-3"
         style={{
           backgroundColor: "var(--bg-surface)",
           borderColor: "var(--border)",
@@ -34,26 +34,9 @@ export function Shell(): React.ReactElement {
         </div>
       </header>
 
-      {/* Main content */}
-      <main
-        className="flex flex-1 flex-col items-center justify-center gap-6 p-8"
-        data-testid="main-content"
-      >
-        <Logo size={64} />
-        <h1
-          className="text-4xl font-bold tracking-tight"
-          style={{ color: "var(--accent)" }}
-          data-testid="brand-heading"
-        >
-          Epik
-        </h1>
-        <p
-          className="text-center text-lg"
-          style={{ color: "var(--text-muted)" }}
-          data-testid="brand-tagline"
-        >
-          You say it. We make it.
-        </p>
+      {/* Primary content — Chat view */}
+      <main className="flex flex-1 overflow-hidden" data-testid="main-content">
+        <ChatView />
       </main>
     </div>
   );
