@@ -32,6 +32,12 @@ export async function invoke<T>(cmd: string, _args?: Record<string, unknown>): P
     return tauriInvoke<T>(cmd, _args);
   }
 
+  // Dynamic override — installed by Playwright addInitScript per test
+  const dynFn = (window as unknown as Record<string, unknown>).__TAURI_INVOKE__ as
+    | ((cmd: string, args: unknown) => Promise<T>)
+    | undefined;
+  if (dynFn !== undefined) return dynFn(cmd, _args);
+
   if (Object.prototype.hasOwnProperty.call(MOCK_RESPONSES, cmd)) {
     return MOCK_RESPONSES[cmd] as T;
   }

@@ -12,11 +12,17 @@ const isTauri = (): boolean =>
 type EventCallback<T> = (event: { payload: T }) => void;
 type UnlistenFn = () => void;
 
-export async function listen<T>(event: string, _handler: EventCallback<T>): Promise<UnlistenFn> {
+export async function listen<T>(event: string, handler: EventCallback<T>): Promise<UnlistenFn> {
   if (isTauri()) {
     const { listen: tauriListen } = await import("@tauri-apps/api/event");
-    return tauriListen<T>(event, _handler);
+    return tauriListen<T>(event, handler);
   }
+
+  // Dynamic override — installed by Playwright addInitScript per test
+  const dynFn = (window as unknown as Record<string, unknown>).__TAURI_LISTEN__ as
+    | ((event: string, handler: EventCallback<T>) => Promise<UnlistenFn>)
+    | undefined;
+  if (dynFn !== undefined) return dynFn(event, handler);
 
   // Browser: no-op — events never fire, nothing to clean up.
   return (): void => {};

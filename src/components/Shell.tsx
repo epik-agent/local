@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthErrorBanner } from "./AuthErrorBanner";
 import { BuildStreamPanel } from "./BuildStreamPanel";
 import { ChatView } from "./ChatView";
@@ -8,6 +8,7 @@ import { SetupWizard } from "./SetupWizard";
 import { ThemeToggle } from "./ThemeToggle";
 import { WaveSidebar } from "./WaveSidebar";
 import { useSetup } from "../hooks/useSetup";
+import { useSidecar } from "../hooks/useSidecar";
 
 /**
  * Main application shell.
@@ -26,6 +27,13 @@ import { useSetup } from "../hooks/useSetup";
 export function Shell(): React.ReactElement {
   const { step, status, retry, completeSetup } = useSetup();
   const [showAuthError, setShowAuthError] = useState(false);
+  const { status: sidecarStatus, error: sidecarError, start } = useSidecar();
+
+  useEffect(() => {
+    if (step === "ready") {
+      void start();
+    }
+  }, [step, start]);
 
   const handleRetry = (): void => {
     void retry();
@@ -80,7 +88,7 @@ export function Shell(): React.ReactElement {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Primary content — Chat + Wave sidebar */}
         <main className="flex flex-1 overflow-hidden" data-testid="main-content">
-          <ChatView />
+          <ChatView sidecarStatus={sidecarStatus} sidecarError={sidecarError} />
           <WaveSidebar />
         </main>
 

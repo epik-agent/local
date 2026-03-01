@@ -1,4 +1,5 @@
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -130,5 +131,35 @@ describe("Shell", () => {
       render(<Shell />);
     });
     expect(screen.queryByTestId("network-banner")).toBeNull();
+  });
+
+  it("calls sidecar_start when setup is ready", async () => {
+    render(<Shell />);
+    await screen.findByTestId("chat-view");
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith("sidecar_start");
+    });
+  });
+
+  it("disables the send button while sidecar is starting", async () => {
+    // sidecar_start never resolves — keeps sidecar in "starting" state
+    mockInvoke.mockImplementation(async (cmd: string) => {
+      if (cmd === "check_gh_installed") return true;
+      if (cmd === "check_gh_auth") return true;
+      if (cmd === "check_network") return true;
+      if (cmd === "sidecar_start") return new Promise(() => undefined);
+      return undefined;
+    });
+
+    render(<Shell />);
+    await screen.findByTestId("chat-view");
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("new-conversation-button"));
+    await user.type(screen.getByTestId("message-input"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("send-button")).toBeDisabled();
+    });
   });
 });
