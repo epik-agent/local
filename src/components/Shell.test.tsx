@@ -34,24 +34,37 @@ function makeStore(): Storage {
 
 describe("Shell", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", makeStore());
+    const store = makeStore();
+    // Pre-seed setup complete so Shell renders the normal layout in most tests.
+    store.setItem("epik.setup.complete", "true");
+    vi.stubGlobal("localStorage", store);
     mockInvoke.mockReset();
     mockListen.mockReset();
-    mockInvoke.mockResolvedValue(undefined);
+    // Default: setup checks all succeed so step resolves to "ready" quickly.
+    mockInvoke.mockImplementation(async (cmd: string) => {
+      if (cmd === "check_gh_installed") return true;
+      if (cmd === "check_gh_auth") return true;
+      if (cmd === "check_network") return true;
+      return undefined;
+    });
     mockListen.mockResolvedValue(() => undefined);
   });
+
   it("renders the application shell", () => {
     render(<Shell />);
     expect(screen.getByTestId("shell")).toBeInTheDocument();
   });
 
-  it("renders the app header", () => {
+  it("renders the app header", async () => {
     render(<Shell />);
+    // Wait for setup to complete and main layout to appear
+    await screen.findByTestId("app-header");
     expect(screen.getByTestId("app-header")).toBeInTheDocument();
   });
 
-  it("renders the main content area", () => {
+  it("renders the main content area", async () => {
     render(<Shell />);
+    await screen.findByTestId("main-content");
     expect(screen.getByTestId("main-content")).toBeInTheDocument();
   });
 
@@ -61,33 +74,55 @@ describe("Shell", () => {
     expect(shell).toHaveStyle({ backgroundColor: "var(--bg)" });
   });
 
-  it("renders the theme toggle button in the header", () => {
+  it("renders the theme toggle button in the header", async () => {
     render(<Shell />);
+    await screen.findByTestId("theme-toggle");
     expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
   });
 
-  it("renders the ChatView as the primary content", () => {
+  it("renders the ChatView as the primary content", async () => {
     render(<Shell />);
+    await screen.findByTestId("chat-view");
     expect(screen.getByTestId("chat-view")).toBeInTheDocument();
   });
 
-  it("renders the conversation sidebar in main content", () => {
+  it("renders the conversation sidebar in main content", async () => {
     render(<Shell />);
+    await screen.findByTestId("conversation-sidebar");
     expect(screen.getByTestId("conversation-sidebar")).toBeInTheDocument();
   });
 
-  it("renders the message input in main content", () => {
+  it("renders the message input in main content", async () => {
     render(<Shell />);
+    await screen.findByTestId("message-input");
     expect(screen.getByTestId("message-input")).toBeInTheDocument();
   });
 
-  it("renders the wave sidebar", () => {
+  it("renders the wave sidebar", async () => {
     render(<Shell />);
+    await screen.findByTestId("wave-sidebar");
     expect(screen.getByTestId("wave-sidebar")).toBeInTheDocument();
   });
 
-  it("renders the build stream panel", () => {
+  it("renders the build stream panel", async () => {
     render(<Shell />);
+    await screen.findByTestId("build-stream-panel");
     expect(screen.getByTestId("build-stream-panel")).toBeInTheDocument();
+  });
+
+  it("shows the setup wizard when setup is not yet complete", async () => {
+    // Remove the setup complete flag.
+    const store = makeStore();
+    vi.stubGlobal("localStorage", store);
+
+    render(<Shell />);
+    await screen.findByTestId("setup-wizard");
+    expect(screen.getByTestId("setup-wizard")).toBeInTheDocument();
+  });
+
+  it("does not show the network banner when online", () => {
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, get: () => true });
+    render(<Shell />);
+    expect(screen.queryByTestId("network-banner")).toBeNull();
   });
 });
