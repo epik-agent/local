@@ -7,8 +7,8 @@
  * React UI can render without crashing.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isTauri = (): boolean => typeof (window as any).__TAURI_INTERNALS__ !== "undefined";
+const isTauri = (): boolean =>
+  "__TAURI_INTERNALS__" in (window as Record<string, unknown>);
 
 type InvokeResponse = boolean | string | null | undefined | Record<string, unknown> | unknown[];
 
