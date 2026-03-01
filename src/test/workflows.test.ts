@@ -129,16 +129,20 @@ describe("ci.yml", () => {
     expect(wf.on?.push?.branches).toContain("main");
   });
 
-  it("has frontend and rust jobs", () => {
+  it("has parallel frontend jobs and rust job", () => {
     const wf = loadWorkflow("ci.yml");
     const names = jobNames(wf);
-    expect(names).toContain("frontend");
+    expect(names).toContain("frontend-format");
+    expect(names).toContain("frontend-lint");
+    expect(names).toContain("frontend-typecheck");
+    expect(names).toContain("frontend-test");
+    expect(names).toContain("frontend-build");
     expect(names).toContain("rust");
   });
 
-  it("frontend job uses setup-node composite action", () => {
+  it("frontend-format job uses setup-node composite action", () => {
     const wf = loadWorkflow("ci.yml");
-    const uses = stepUses(stepsOf(wf, "frontend"));
+    const uses = stepUses(stepsOf(wf, "frontend-format"));
     expect(uses.some((u) => u.includes("setup-node"))).toBe(true);
   });
 
@@ -164,20 +168,17 @@ describe("preview.yml", () => {
     expect(wf.on?.pull_request).toBeDefined();
   });
 
-  it("has a frontend checks job", () => {
+  it("has only a Linux build job (frontend checks run in ci.yml)", () => {
     const wf = loadWorkflow("preview.yml");
-    expect(jobNames(wf)).toContain("frontend");
+    const names = jobNames(wf);
+    expect(names).toContain("build-linux");
+    expect(names).not.toContain("frontend");
   });
 
-  it("has a Linux build job", () => {
-    const wf = loadWorkflow("preview.yml");
-    expect(jobNames(wf)).toContain("build-linux");
-  });
-
-  it("Linux build job depends on frontend job", () => {
+  it("Linux build job has no blocking dependencies", () => {
     const wf = loadWorkflow("preview.yml");
     const needs = toArray(wf.jobs?.["build-linux"]?.needs);
-    expect(needs).toContain("frontend");
+    expect(needs).toHaveLength(0);
   });
 
   it("Linux build job uses build-tauri composite action", () => {
@@ -189,18 +190,6 @@ describe("preview.yml", () => {
   it("Linux build job runs on ubuntu-latest", () => {
     const wf = loadWorkflow("preview.yml");
     expect(wf.jobs?.["build-linux"]?.["runs-on"]).toBe("ubuntu-latest");
-  });
-
-  it("frontend job runs lint", () => {
-    const wf = loadWorkflow("preview.yml");
-    const runs = stepRuns(stepsOf(wf, "frontend"));
-    expect(runs.some((r) => r.includes("pnpm lint"))).toBe(true);
-  });
-
-  it("frontend job runs tests", () => {
-    const wf = loadWorkflow("preview.yml");
-    const runs = stepRuns(stepsOf(wf, "frontend"));
-    expect(runs.some((r) => r.includes("pnpm test"))).toBe(true);
   });
 });
 
@@ -296,7 +285,7 @@ describe("build-tauri composite action", () => {
     const steps = action.runs?.steps ?? [];
     const linuxStep = steps.find((s) => s.if !== undefined && s.if.includes("Linux"));
     expect(linuxStep).toBeDefined();
-    expect(linuxStep?.run).toContain("libwebkit2gtk");
+    expect(linuxStep?.with?.packages).toContain("libwebkit2gtk");
   });
 
   it("uses setup-node composite action", () => {
