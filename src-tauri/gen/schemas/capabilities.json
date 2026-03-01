@@ -1,1 +1,1 @@
-{}
+{"default":{"identifier":"default","description":"Default capabilities for the main window","local":true,"windows":["main"],"permissions":["core:default",{"identifier":"shell:allow-execute","allow":[{"args":true,"cmd":"gh","name":"gh","sidecar":false},{"args":true,"cmd":"curl","name":"curl","sidecar":false}]},{"identifier":"shell:allow-spawn","allow":[{"args":true,"cmd":"binaries/epik-sidecar","name":"epik-sidecar","sidecar":true}]}]}}

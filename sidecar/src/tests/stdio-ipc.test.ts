@@ -66,7 +66,8 @@ describe("parseLine", () => {
 });
 
 describe("writeEvent", () => {
-  let writeSpy: ReturnType<typeof vi.spyOn>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let writeSpy: ReturnType<typeof vi.spyOn<any, any>>;
 
   beforeEach(() => {
     writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);

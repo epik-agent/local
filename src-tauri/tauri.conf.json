@@ -7,7 +7,7 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build"
+    "beforeBuildCommand": "pnpm run build:sidecar && pnpm build"
   },
   "app": {
     "windows": [
@@ -42,14 +42,7 @@
   },
   "plugins": {
     "shell": {
-      "open": false,
-      "sidecar": true,
-      "scope": [
-        {
-          "name": "binaries/epik-sidecar",
-          "sidecar": true
-        }
-      ]
+      "open": false
     }
   }
 }
