@@ -23,7 +23,7 @@
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged",
+    "pre-commit": "cargo fmt --manifest-path src-tauri/Cargo.toml && pnpm lint-staged",
     "pre-push": "pnpm type-check"
   },
   "lint-staged": {

@@ -698,7 +698,14 @@ async fn check_gh_auth() -> bool {
 #[tauri::command]
 async fn check_network() -> bool {
     std::process::Command::new("curl")
-        .args(["-s", "--max-time", "3", "-o", "/dev/null", "https://github.com"])
+        .args([
+            "-s",
+            "--max-time",
+            "3",
+            "-o",
+            "/dev/null",
+            "https://github.com",
+        ])
         .output()
         .map(|o| o.status.success())
         .unwrap_or(false)
