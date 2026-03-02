@@ -90,7 +90,7 @@ if (process.env["EPIK_SIDECAR_DEV"] === "1") {
 
   console.log("Injecting SEA blob...");
   execSync(
-    `npx postject ${outPath} NODE_SEA_BLOB ${seaBlob} --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2`,
+    `./node_modules/.bin/postject ${outPath} NODE_SEA_BLOB ${seaBlob} --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2`,
     { cwd: SIDECAR_DIR, stdio: "inherit" },
   );
   console.log(`Binary: ${outPath}`);
