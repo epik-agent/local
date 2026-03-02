@@ -19,7 +19,7 @@
  */
 
 import { execSync } from "node:child_process";
-import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { platform, arch } from "node:os";
 
@@ -54,7 +54,7 @@ mkdirSync(join(SIDECAR_DIR, "dist-bundle"), { recursive: true });
 // Step 1: Bundle with esbuild
 console.log("Bundling with esbuild...");
 execSync(
-  `npx esbuild src/index.ts --bundle --platform=node --target=node22 --format=esm --outfile=${BUNDLE_FILE} --external:@anthropic-ai/claude-code`,
+  `./node_modules/.bin/esbuild src/index.ts --bundle --platform=node --target=node22 --format=esm --outfile=${BUNDLE_FILE} --external:@anthropic-ai/claude-code`,
   { cwd: SIDECAR_DIR, stdio: "inherit" },
 );
 
@@ -63,7 +63,8 @@ if (process.env["EPIK_SIDECAR_DEV"] === "1") {
   // This avoids the need for pkg/SEA tooling in CI.
   console.log("Dev mode: writing shell-script wrapper...");
   const wrapper = `#!/usr/bin/env sh\nexec node "${BUNDLE_FILE}" "$@"\n`;
-  writeFileSync(outPath, wrapper, { mode: 0o755 });
+  writeFileSync(outPath, wrapper);
+  chmodSync(outPath, 0o755);
   console.log(`Wrote wrapper: ${outPath}`);
 } else {
   // Production: use Node SEA (Node.js ≥ 21) to compile a real binary.
@@ -89,7 +90,7 @@ if (process.env["EPIK_SIDECAR_DEV"] === "1") {
 
   console.log("Injecting SEA blob...");
   execSync(
-    `npx postject ${outPath} NODE_SEA_BLOB ${seaBlob} --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2`,
+    `./node_modules/.bin/postject ${outPath} NODE_SEA_BLOB ${seaBlob} --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2`,
     { cwd: SIDECAR_DIR, stdio: "inherit" },
   );
   console.log(`Binary: ${outPath}`);

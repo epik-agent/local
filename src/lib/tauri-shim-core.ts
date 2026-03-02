@@ -5,7 +5,18 @@
  * defined, so we delegate directly to the real package.  In a plain browser
  * (e.g. a Vercel preview deployment) we return sensible mock values so the
  * React UI can render without crashing.
+ *
+ * The real Tauri ``invoke`` is imported via a relative path to the installed
+ * package so that Vite's alias (which maps ``@tauri-apps/api/core`` → this
+ * file) does not create a self-referential loop.
  */
+
+// Import the real invoke directly from the package file. A relative path is
+// used so Vite's alias (which maps "@tauri-apps/api/core" → this shim) does
+// not create a self-referential loop.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore – relative node_modules path intentional; avoids alias loop
+import { invoke as tauriInvoke } from "../../node_modules/@tauri-apps/api/core.js";
 
 const isTauri = (): boolean =>
   "__TAURI_INTERNALS__" in (window as unknown as Record<string, unknown>);
@@ -28,8 +39,10 @@ const MOCK_RESPONSES: Record<string, InvokeResponse> = {
 
 export async function invoke<T>(cmd: string, _args?: Record<string, unknown>): Promise<T> {
   if (isTauri()) {
-    const { invoke: tauriInvoke } = await import("@tauri-apps/api/core");
-    return await tauriInvoke<T>(cmd, _args);
+    return await (tauriInvoke as (cmd: string, args?: Record<string, unknown>) => Promise<T>)(
+      cmd,
+      _args,
+    );
   }
 
   // Dynamic override — installed by Playwright addInitScript per test
