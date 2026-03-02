@@ -54,7 +54,7 @@ mkdirSync(join(SIDECAR_DIR, "dist-bundle"), { recursive: true });
 // Step 1: Bundle with esbuild
 console.log("Bundling with esbuild...");
 execSync(
-  `npx esbuild src/index.ts --bundle --platform=node --target=node22 --format=esm --outfile=${BUNDLE_FILE} --external:@anthropic-ai/claude-code`,
+  `./node_modules/.bin/esbuild src/index.ts --bundle --platform=node --target=node22 --format=esm --outfile=${BUNDLE_FILE} --external:@anthropic-ai/claude-code`,
   { cwd: SIDECAR_DIR, stdio: "inherit" },
 );
 
